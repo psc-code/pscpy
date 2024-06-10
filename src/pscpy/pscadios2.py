@@ -5,11 +5,12 @@ import xarray
 from xarray.core import indexing
 from xarray.backends.common import BACKEND_ENTRYPOINTS, BackendEntrypoint, BackendArray, _normalize_path, AbstractDataStore
 from xarray.backends import CachingFileManager
-from xarray.backends.locks import SerializableLock, get_write_lock, ensure_lock
+from xarray.backends.locks import SerializableLock, get_write_lock, ensure_lock, combine_locks
 from xarray.core.utils import FrozenDict
 
 from collections import namedtuple
 import logging
+import os
 
 # adios2 is not thread safe
 ADIOS2_LOCK = SerializableLock()
