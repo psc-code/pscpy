@@ -11,11 +11,12 @@ from ._version import version as __version__
 __all__ = ["__version__"]
 
 
-import numpy as np
-import pscpy.adios2py
 import os
-import xarray as xr
 from collections import namedtuple
 
-from . import pscadios2
-from . import pschdf5
+import numpy as np
+import xarray as xr
+
+import pscpy.adios2py
+
+from . import pscadios2, pschdf5

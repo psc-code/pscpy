@@ -1,16 +1,27 @@
-from .psc import RunInfo, FieldToComponent
-from .. import adios2py
+from __future__ import annotations
+
+import os
 
 import xarray
-from xarray.core import indexing
-from xarray.backends.common import BACKEND_ENTRYPOINTS, BackendEntrypoint, BackendArray, _normalize_path, AbstractDataStore
 from xarray.backends import CachingFileManager
-from xarray.backends.locks import SerializableLock, get_write_lock, ensure_lock, combine_locks
+from xarray.backends.common import (
+    BACKEND_ENTRYPOINTS,
+    AbstractDataStore,
+    BackendArray,
+    BackendEntrypoint,
+    _normalize_path,
+)
+from xarray.backends.locks import (
+    SerializableLock,
+    combine_locks,
+    ensure_lock,
+    get_write_lock,
+)
+from xarray.core import indexing
 from xarray.core.utils import FrozenDict
 
-from collections import namedtuple
-import logging
-import os
+from .. import adios2py
+from .psc import FieldToComponent, RunInfo
 
 # adios2 is not thread safe
 ADIOS2_LOCK = SerializableLock()
@@ -45,7 +56,15 @@ class PscAdios2Array(BackendArray):
 
 
 class PscAdios2Store(AbstractDataStore):
-    def __init__(self, manager, species_names, mode=None, lock=ADIOS2_LOCK, length=None, corner=None):
+    def __init__(
+        self,
+        manager,
+        species_names,
+        mode=None,
+        lock=ADIOS2_LOCK,
+        length=None,
+        corner=None,
+    ):
         self._manager = manager
         self._mode = mode
         self.lock = ensure_lock(lock)
@@ -113,8 +132,22 @@ def psc_open_dataset(filename_or_obj, species_names, length=None, corner=None, d
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     available = True
 
-    def open_dataset(self, filename_or_obj, *, drop_variables=None, length=None, corner=None, species_names=None):  # e.g. ['e', 'i']; FIXME should be readable from file
-        return psc_open_dataset(filename_or_obj, species_names, drop_variables=drop_variables, length=length, corner=corner)
+    def open_dataset(
+        self,
+        filename_or_obj,
+        *,
+        drop_variables=None,
+        length=None,
+        corner=None,
+        species_names=None,
+    ):  # e.g. ['e', 'i']; FIXME should be readable from file
+        return psc_open_dataset(
+            filename_or_obj,
+            species_names,
+            drop_variables=drop_variables,
+            length=length,
+            corner=corner,
+        )
 
     open_dataset_parameters = ["filename_or_obj", "drop_variables"]
 

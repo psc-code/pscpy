@@ -1,11 +1,20 @@
+from __future__ import annotations
+
+import logging
+
 import adios2
 import numpy as np
-import logging
 
 _ad = adios2.ADIOS()
 
-_dtype_map = {"float": np.float32, "double": np.float64, "uint64_t": np.uint64,
-              "int64_t": np.int64, "int32_t": np.int32, "uint32_t": np.uint32}
+_dtype_map = {
+    "float": np.float32,
+    "double": np.float64,
+    "uint64_t": np.uint64,
+    "int64_t": np.int64,
+    "int32_t": np.int32,
+    "uint32_t": np.uint32,
+}
 
 
 class variable:
@@ -50,7 +59,7 @@ class variable:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
-            args = (args, )
+            args = (args,)
 
         shape = self.shape
         sel_start = np.zeros_like(shape)
@@ -93,7 +102,7 @@ class variable:
 
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(arr_shape, dtype=self.dtype, order='F')
+        arr = np.empty(arr_shape, dtype=self.dtype, order="F")
         # print("reading ", self.name, args)
         self._engine.Get(self._var, arr, adios2.Mode.Sync)
         return arr
@@ -103,10 +112,10 @@ class variable:
 
 
 class file:
-    def __init__(self, filename, mode='r'):
+    def __init__(self, filename, mode="r"):
         logging.debug(f"adios2py: __init__ {filename}")
-        assert mode == 'r'
-        self._io_name = f'io-{filename}'
+        assert mode == "r"
+        self._io_name = f"io-{filename}"
         self._io = _ad.DeclareIO(self._io_name)
         self._engine = self._io.Open(filename, adios2.Mode.Read)
         self._open_vars = {}
@@ -115,20 +124,20 @@ class file:
         self.attributes = self._io.AvailableAttributes().keys()
 
     def __enter__(self):
-        logging.debug(f"adios2py: __enter__")
+        logging.debug("adios2py: __enter__")
         return self
 
     def __exit__(self, type, value, traceback):
-        logging.debug(f"adios2py: __exit__")
+        logging.debug("adios2py: __exit__")
         self.close()
 
     def __del__(self):
-        logging.debug(f"adios2py: __del__")
+        logging.debug("adios2py: __del__")
         if self._engine:
             self.close()
 
     def close(self):
-        logging.debug(f"adios2py: close")
+        logging.debug("adios2py: close")
         logging.debug(f"open vars {self._open_vars}")
         for varname, var in self._open_vars.items():
             var.close()
