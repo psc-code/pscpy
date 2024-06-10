@@ -30,7 +30,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+  "xarray",
+  "adios2",
+]
 
 [project.optional-dependencies]
 test = [
