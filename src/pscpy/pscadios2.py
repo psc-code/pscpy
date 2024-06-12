@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import os
-from typing import Any, Iterable, override
+from typing import Any, Iterable, Protocol, override
 
 import xarray
 from numpy.typing import ArrayLike
@@ -25,7 +25,18 @@ from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
 from . import adios2py
-from .psc import get_field_to_component, RunInfo
+from .psc import RunInfo, get_field_to_component
+
+
+class Lock(Protocol):
+    """Provides duck typing for xarray locks, which do not inherit from a common base class."""
+
+    def acquire(self, blocking=True): ...
+    def release(self): ...
+    def __enter__(self): ...
+    def __exit__(self, *args): ...
+    def locked(self): ...
+
 
 # adios2 is not thread safe
 ADIOS2_LOCK = SerializableLock()
@@ -62,21 +73,28 @@ class PscAdios2Array(BackendArray):
 class PscAdios2Store(AbstractDataStore):
     def __init__(
         self,
-        manager,
-        species_names,
-        mode=None,
-        lock=ADIOS2_LOCK,
-        length=None,
-        corner=None,
+        manager: CachingFileManager,
+        species_names: Iterable[str],
+        mode: str | None = None,
+        lock: Lock = ADIOS2_LOCK,
+        length: ArrayLike | None = None,
+        corner: ArrayLike | None = None,
     ):
         self._manager = manager
         self._mode = mode
-        self.lock = ensure_lock(lock)
+        self.lock: Lock = ensure_lock(lock)
         self.psc = RunInfo(self.ds, length=length, corner=corner)
         self._species_names = species_names
 
-    @classmethod
-    def open(cls, filename, species_names, mode="r", lock=None, length=None, corner=None):
+    @staticmethod
+    def open(
+        filename: str,
+        species_names: Iterable[str],
+        mode: str = "r",
+        lock: Lock | None = None,
+        length: ArrayLike | None = None,
+        corner: ArrayLike | None = None,
+    ) -> PscAdios2Store:
         if lock is None:
             if mode == "r":
                 lock = ADIOS2_LOCK
@@ -84,7 +102,7 @@ class PscAdios2Store(AbstractDataStore):
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])
 
         manager = CachingFileManager(adios2py.File, filename, mode=mode)
-        return cls(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
+        return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
 
     def _acquire(self, needs_lock=True):
         with self._manager.acquire_context(needs_lock) as root:
