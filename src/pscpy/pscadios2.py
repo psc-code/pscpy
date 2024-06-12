@@ -179,7 +179,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     open_dataset_parameters = ["filename_or_obj", "drop_variables"]
 
     @override
-    def guess_can_open(self, filename_or_obj):
+    def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
         try:
             _, ext = os.path.splitext(filename_or_obj)
         except TypeError:
