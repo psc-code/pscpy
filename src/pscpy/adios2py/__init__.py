@@ -5,6 +5,7 @@ import logging
 import adios2
 import adios2.stream
 import numpy as np
+from numpy.typing import NDArray
 
 _ad = adios2.Adios()
 
@@ -47,7 +48,7 @@ class Variable:
 
         return adios2.type_adios_to_numpy(self._var.type())
 
-    def __getitem__(self, args):
+    def __getitem__(self, args) -> NDArray:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
