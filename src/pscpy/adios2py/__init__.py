@@ -119,7 +119,7 @@ class File:
         logging.debug("adios2py: __enter__")
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exception_type, exception_value, exception_traceback):
         logging.debug("adios2py: __exit__")
         self.close()
 
