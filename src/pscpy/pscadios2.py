@@ -95,6 +95,7 @@ class PscAdios2Store(AbstractDataStore):
     def ds(self):
         return self._acquire()
 
+    @override
     def get_variables(self):
         fields_to_index = FieldToComponent(self._species_names)
 
@@ -112,6 +113,7 @@ class PscAdios2Store(AbstractDataStore):
         coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
         return xarray.DataArray(data, dims=dims, coords=coords)
 
+    @override
     def get_attrs(self):
         # FIXME this is not the best way to get attributes
         def expand_attr(attr):
@@ -121,6 +123,10 @@ class PscAdios2Store(AbstractDataStore):
             return data
 
         return FrozenDict((name, expand_attr(self.ds._io.InquireAttribute(name))) for name in self.ds.attributes)
+
+    @override
+    def get_dimensions(self):
+        raise NotImplementedError()
 
 
 def psc_open_dataset(
