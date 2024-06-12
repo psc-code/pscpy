@@ -5,7 +5,7 @@ import logging
 import adios2
 import numpy as np
 
-_ad = adios2.ADIOS()
+_ad = adios2.Adios()
 
 _dtype_map = {
     "float": np.float32,
