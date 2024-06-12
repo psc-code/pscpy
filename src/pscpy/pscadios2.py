@@ -24,7 +24,7 @@ from xarray.core import indexing
 from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
-from .adios2py import File
+from .adios2py import File, Variable
 from .psc import RunInfo, get_field_to_component
 
 
@@ -57,9 +57,8 @@ class PscAdios2Array(BackendArray):
         self.shape = array.shape[:-1]
         self.dtype = array.dtype
 
-    def get_array(self, needs_lock=True):
-        ds = self.datastore._acquire(needs_lock)
-        return ds[self._orig_varname]
+    def get_array(self, needs_lock: bool = True) -> Variable:
+        return self.datastore._acquire(needs_lock)[self._orig_varname]
 
     def __getitem__(self, key):
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
