@@ -37,7 +37,7 @@ class PscAdios2Array(BackendArray):
     This also takes care of slicing out the specific component of the data stored as 4-d array.
     """
 
-    def __init__(self, variable_name, datastore, orig_varname, component):
+    def __init__(self, variable_name: str, datastore: PscAdios2Store, orig_varname: str, component: int):
         self.variable_name = variable_name
         self.datastore = datastore
         self._orig_varname = orig_varname
@@ -104,11 +104,10 @@ class PscAdios2Store(AbstractDataStore):
             for field, idx in field_to_index[orig_varname].items():
                 variables[field] = (orig_varname, idx)
 
-        return FrozenDict((k, self.open_store_variable(k, v)) for k, v in variables.items())
+        return FrozenDict((field, self.open_store_variable(field, *tup)) for field, tup in variables.items())
 
-    def open_store_variable(self, name, tpl):
-        orig_varname, idx = tpl
-        data = indexing.LazilyIndexedArray(PscAdios2Array(name, self, orig_varname, idx))
+    def open_store_variable(self, field: str, orig_varname: str, idx: int):
+        data = indexing.LazilyIndexedArray(PscAdios2Array(field, self, orig_varname, idx))
         dims = ["x", "y", "z"]
         coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
         return xarray.DataArray(data, dims=dims, coords=coords)
