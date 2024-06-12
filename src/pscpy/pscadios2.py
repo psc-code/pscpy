@@ -114,13 +114,13 @@ class PscAdios2Store(AbstractDataStore):
 
     def get_attrs(self):
         # FIXME this is not the best way to get attributes
-        def expandAttr(attr):
+        def expand_attr(attr):
             data = attr.Data()
             if len(data) == 1:
                 return data[0]
             return data
 
-        return FrozenDict((name, expandAttr(self.ds._io.InquireAttribute(name))) for name in self.ds.attributes)
+        return FrozenDict((name, expand_attr(self.ds._io.InquireAttribute(name))) for name in self.ds.attributes)
 
 
 def psc_open_dataset(
