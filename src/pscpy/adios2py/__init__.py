@@ -108,12 +108,12 @@ class File:
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
         self._io_name = f"io-{filename}"
-        self._io = _ad.DeclareIO(self._io_name)
-        self._engine = self._io.Open(filename, adios2.bindings.Mode.Read)
-        self._open_vars = {}
+        self._io = _ad.declare_io(self._io_name)
+        self._engine = self._io.open(filename, adios2.bindings.Mode.Read)
+        self._open_vars: dict[str, Variable] = {}
 
-        self.variables = self._io.AvailableVariables().keys()
-        self.attributes = self._io.AvailableAttributes().keys()
+        self.variables = self._io.available_variables().keys()
+        self.attributes = self._io.available_attributes().keys()
 
     def __enter__(self):
         logging.debug("adios2py: __enter__")
@@ -134,14 +134,14 @@ class File:
         for varname, var in self._open_vars.items():
             var.close()
 
-        self._engine.Close()
+        self._engine.close()
         self._engine = None
 
-        _ad.RemoveIO(self._io_name)
+        _ad.remove_io(self._io_name)
         self._io = None
         self._io_name = None
 
     def __getitem__(self, varname):
-        var = Variable(self._io.InquireVariable(varname), self._engine)
+        var = Variable(self._io.inquire_variable(varname), self._engine)
         self._open_vars[varname] = var
         return var
