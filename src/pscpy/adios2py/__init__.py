@@ -14,6 +14,8 @@ _ad = Adios()
 
 
 class Variable:
+    """Wrapper for an `adios2.Variable` object to facilitate loading and indexing into it."""
+
     def __init__(self, var: adios2.Variable, engine: adios2.Engine):
         self._var = var
         self._engine = engine
@@ -101,6 +103,8 @@ class Variable:
 
 
 class File:
+    """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
+
     def __init__(self, filename: str, mode: str = "r"):
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
