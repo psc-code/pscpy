@@ -140,6 +140,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         length=None,
         corner=None,
         species_names=None,  # e.g. ['e', 'i']; FIXME should be readable from file
+        **kwargs: Any,
     ):
         return psc_open_dataset(
             filename_or_obj,
