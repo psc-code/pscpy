@@ -20,7 +20,7 @@ from xarray.backends.locks import (
 from xarray.core import indexing
 from xarray.core.utils import FrozenDict
 
-from .. import adios2py
+from . import adios2py
 from .psc import FieldToComponent, RunInfo
 
 # adios2 is not thread safe
