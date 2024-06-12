@@ -52,7 +52,7 @@ class RunInfo:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 
-def FieldToComponent(species):
+def field_to_component(species):
     map = dict()
     map["jeh"] = {
         "jx_ec": 0,
