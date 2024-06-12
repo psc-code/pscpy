@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 import adios2
+import adios2.stream
 import numpy as np
 
 _ad = adios2.Adios()
@@ -18,7 +19,7 @@ _dtype_map = {
 
 
 class Variable:
-    def __init__(self, var, engine):
+    def __init__(self, var, engine: adios2.Engine):
         self._var = var
         self._engine = engine
         self.name = self._name()
@@ -104,7 +105,7 @@ class Variable:
 
         arr = np.empty(arr_shape, dtype=self.dtype, order="F")
         # print("reading ", self.name, args)
-        self._engine.Get(self._var, arr, adios2.Mode.Sync)
+        self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self):
@@ -117,7 +118,7 @@ class File:
         assert mode == "r"
         self._io_name = f"io-{filename}"
         self._io = _ad.DeclareIO(self._io_name)
-        self._engine = self._io.Open(filename, adios2.Mode.Read)
+        self._engine = self._io.Open(filename, adios2.bindings.Mode.Read)
         self._open_vars = {}
 
         self.variables = self._io.AvailableVariables().keys()
