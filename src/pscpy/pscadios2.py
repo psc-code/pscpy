@@ -127,7 +127,6 @@ def psc_open_dataset(
     species_names: list[str] | None = None,
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
-    drop_variables: str | Iterable[str] | None = None,
 ) -> xarray.Dataset:
     filename_or_obj = _normalize_path(filename_or_obj)
     store = PscAdios2Store.open(filename_or_obj, species_names, length=length, corner=corner)
@@ -157,7 +156,6 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         return psc_open_dataset(
             filename_or_obj,
             species_names,
-            drop_variables=drop_variables,
             length=length,
             corner=corner,
         )
