@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import os
-from typing import Any, Iterable
+from typing import Any, Iterable, override
 
 import xarray
 from numpy.typing import ArrayLike
@@ -140,6 +140,7 @@ def psc_open_dataset(
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     available = True
 
+    @override
     def open_dataset(
         self,
         filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore,
@@ -162,6 +163,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
     open_dataset_parameters = ["filename_or_obj", "drop_variables"]
 
+    @override
     def guess_can_open(self, filename_or_obj):
         try:
             _, ext = os.path.splitext(filename_or_obj)
