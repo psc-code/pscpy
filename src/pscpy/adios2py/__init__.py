@@ -104,7 +104,7 @@ class Variable:
 
 
 class File:
-    def __init__(self, filename, mode="r"):
+    def __init__(self, filename: str, mode: str = "r"):
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
         self._io_name = f"io-{filename}"
