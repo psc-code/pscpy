@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 import numpy as np
 
 
@@ -52,9 +54,9 @@ class RunInfo:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 
-def field_to_component(species):
-    map = dict()
-    map["jeh"] = {
+def get_field_to_index(species_names: Iterable[str]) -> dict[str, dict[str, int]]:
+    field_to_component: dict[str, dict[str, int]] = {}
+    field_to_component["jeh"] = {
         "jx_ec": 0,
         "jy_ec": 1,
         "jz_ec": 2,
@@ -65,14 +67,14 @@ def field_to_component(species):
         "hy_fc": 7,
         "hz_fc": 8,
     }
-    map["dive"] = {"dive": 0}
-    map["rho"] = {"rho": 0}
-    map["d_rho"] = {"d_rho": 0}
-    map["div_j"] = {"div_j": 0}
+    field_to_component["dive"] = {"dive": 0}
+    field_to_component["rho"] = {"rho": 0}
+    field_to_component["d_rho"] = {"d_rho": 0}
+    field_to_component["div_j"] = {"div_j": 0}
 
     # keeping 'all_1st' for backwards compatibility
-    map["all_1st"] = {}
-    map["all_1st_cc"] = {}
+    field_to_component["all_1st"] = {}
+    field_to_component["all_1st_cc"] = {}
     moments = [
         "rho",
         "jx",
@@ -88,9 +90,9 @@ def field_to_component(species):
         "tyz",
         "tzx",
     ]
-    for i_sp, sp in enumerate(species):
-        for i_mom, mom in enumerate(moments):
-            map["all_1st"][f"{mom}_{sp}"] = i_mom + 13 * i_sp
-            map["all_1st_cc"][f"{mom}_{sp}"] = i_mom + 13 * i_sp
+    for species_idx, species_name in enumerate(species_names):
+        for moment_idx, moment in enumerate(moments):
+            field_to_component["all_1st"][f"{moment}_{species_name}"] = moment_idx + 13 * species_idx
+            field_to_component["all_1st_cc"][f"{moment}_{species_name}"] = moment_idx + 13 * species_idx
 
-    return map
+    return field_to_component

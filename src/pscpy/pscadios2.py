@@ -25,7 +25,7 @@ from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
 from . import adios2py
-from .psc import field_to_component, RunInfo
+from .psc import get_field_to_index, RunInfo
 
 # adios2 is not thread safe
 ADIOS2_LOCK = SerializableLock()
@@ -97,11 +97,11 @@ class PscAdios2Store(AbstractDataStore):
 
     @override
     def get_variables(self):
-        fields_to_index = field_to_component(self._species_names)
+        field_to_index = get_field_to_index(self._species_names)
 
         variables = {}
         for varname in self.ds.variables:
-            for field, idx in fields_to_index[varname].items():
+            for field, idx in field_to_index[varname].items():
                 variables[field] = (varname, idx)
 
         return FrozenDict((k, self.open_store_variable(k, v)) for k, v in variables.items())
