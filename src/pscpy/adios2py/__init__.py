@@ -19,7 +19,7 @@ _dtype_map = {
 
 
 class Variable:
-    def __init__(self, var, engine: adios2.Engine):
+    def __init__(self, var: adios2.Variable, engine: adios2.Engine):
         self._var = var
         self._engine = engine
         self.name = self._name()
@@ -39,22 +39,22 @@ class Variable:
     def _set_selection(self, start, count):
         self._assert_not_closed()
 
-        self._var.SetSelection((start[::-1], count[::-1]))
+        self._var.set_selection((start[::-1], count[::-1]))
 
     def _shape(self):
         self._assert_not_closed()
 
-        return self._var.Shape()[::-1]
+        return self._var.shape()[::-1]
 
-    def _name(self):
+    def _name(self) -> str:
         self._assert_not_closed()
 
-        return self._var.Name()
+        return self._var.name()
 
     def _dtype(self):
         self._assert_not_closed()
 
-        return _dtype_map[self._var.Type()]
+        return _dtype_map[self._var.type()]
 
     def __getitem__(self, args):
         self._assert_not_closed()
