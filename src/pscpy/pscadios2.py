@@ -58,7 +58,7 @@ class PscAdios2Array(BackendArray):
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> Variable:
-        return self.datastore._acquire(needs_lock)[self._orig_varname]
+        return self.datastore.acquire(needs_lock)[self._orig_varname]
 
     def __getitem__(self, key: indexing.ExplicitIndexer):
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
@@ -102,14 +102,14 @@ class PscAdios2Store(AbstractDataStore):
         manager = CachingFileManager(File, filename, mode=mode)
         return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
 
-    def _acquire(self, needs_lock: bool = True) -> File:
+    def acquire(self, needs_lock: bool = True) -> File:
         with self._manager.acquire_context(needs_lock) as root:
             ds = root
         return ds
 
     @property
     def ds(self) -> File:
-        return self._acquire()
+        return self.acquire()
 
     @override
     def get_variables(self):
