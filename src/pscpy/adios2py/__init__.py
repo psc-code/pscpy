@@ -25,7 +25,7 @@ class Variable:
         self.name = self._name()
         self.shape = self._shape()
         self.dtype = self._dtype()
-        logging.debug(f"variable __init__ var {var} engine {engine}")
+        logging.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self):
         logging.debug("adios2py.variable close")
@@ -114,7 +114,7 @@ class Variable:
 
 class File:
     def __init__(self, filename, mode="r"):
-        logging.debug(f"adios2py: __init__ {filename}")
+        logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
         self._io_name = f"io-{filename}"
         self._io = _ad.DeclareIO(self._io_name)
@@ -139,7 +139,7 @@ class File:
 
     def close(self):
         logging.debug("adios2py: close")
-        logging.debug(f"open vars {self._open_vars}")
+        logging.debug("open vars %s", self._open_vars)
         for varname, var in self._open_vars.items():
             var.close()
 
