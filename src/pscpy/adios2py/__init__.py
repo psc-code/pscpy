@@ -5,9 +5,10 @@ import logging
 import adios2
 import adios2.stream
 import numpy as np
+from adios2.adios import Adios
 from numpy.typing import NDArray
 
-_ad = adios2.Adios()
+_ad = Adios()
 
 
 class Variable:
