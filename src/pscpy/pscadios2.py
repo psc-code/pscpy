@@ -99,10 +99,10 @@ class PscAdios2Store(AbstractDataStore):
     def get_variables(self):
         field_to_index = get_field_to_index(self._species_names)
 
-        variables = {}
-        for varname in self.ds.variables:
-            for field, idx in field_to_index[varname].items():
-                variables[field] = (varname, idx)
+        variables: dict[str, tuple[str, int]] = {}
+        for orig_varname in self.ds.variables:
+            for field, idx in field_to_index[orig_varname].items():
+                variables[field] = (orig_varname, idx)
 
         return FrozenDict((k, self.open_store_variable(k, v)) for k, v in variables.items())
 
