@@ -131,7 +131,7 @@ class File:
     def close(self):
         logging.debug("adios2py: close")
         logging.debug("open vars %s", self._open_vars)
-        for varname, var in self._open_vars.items():
+        for var in self._open_vars.values():
             var.close()
 
         self._engine.close()
