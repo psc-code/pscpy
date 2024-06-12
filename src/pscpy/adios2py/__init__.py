@@ -8,15 +8,6 @@ import numpy as np
 
 _ad = adios2.Adios()
 
-_dtype_map = {
-    "float": np.float32,
-    "double": np.float64,
-    "uint64_t": np.uint64,
-    "int64_t": np.int64,
-    "int32_t": np.int32,
-    "uint32_t": np.uint32,
-}
-
 
 class Variable:
     def __init__(self, var: adios2.Variable, engine: adios2.Engine):
@@ -54,7 +45,7 @@ class Variable:
     def _dtype(self):
         self._assert_not_closed()
 
-        return _dtype_map[self._var.type()]
+        return adios2.type_adios_to_numpy(self._var.type())
 
     def __getitem__(self, args):
         self._assert_not_closed()
