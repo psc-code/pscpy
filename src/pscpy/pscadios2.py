@@ -5,7 +5,6 @@ import os
 from typing import Any, Iterable, Protocol, override
 
 import xarray
-from adios2 import Attribute
 from numpy.typing import ArrayLike, NDArray
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
@@ -131,15 +130,7 @@ class PscAdios2Store(AbstractDataStore):
 
     @override
     def get_attrs(self):
-        # FIXME this is not the best way to get attributes
-        # FIXME use SingleValue when writing data
-        def expand_attr(attr: Attribute):
-            data = attr.data()
-            if len(data) == 1:
-                return data[0]
-            return data
-
-        return FrozenDict((name, expand_attr(self.ds._io.inquire_attribute(name))) for name in self.ds.attribute_names)
+        return FrozenDict((name, self.ds.get_attribute(name)) for name in self.ds.attribute_names)
 
     @override
     def get_dimensions(self):

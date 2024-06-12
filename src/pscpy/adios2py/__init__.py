@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Collection
+from typing import Any
 
 import adios2
 import adios2.stream
@@ -148,3 +149,11 @@ class File:
         var = Variable(self._io.inquire_variable(variable_name), self._engine)
         self._open_vars[variable_name] = var
         return var
+
+    def get_attribute(self, attribute_name: str) -> Any:
+        adios2_attr = self._io.inquire_attribute(attribute_name)
+        data = adios2_attr.data()
+        # FIXME use SingleValue when writing data to avoid doing this (?)
+        if len(data) == 1:
+            return data[0]
+        return data
