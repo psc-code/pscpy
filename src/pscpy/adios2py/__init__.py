@@ -144,7 +144,7 @@ class File:
         self._io = None
         self._io_name = None
 
-    def __getitem__(self, varname: str) -> Variable:
-        var = Variable(self._io.inquire_variable(varname), self._engine)
-        self._open_vars[varname] = var
+    def get_variable(self, variable_name: str) -> Variable:
+        var = Variable(self._io.inquire_variable(variable_name), self._engine)
+        self._open_vars[variable_name] = var
         return var

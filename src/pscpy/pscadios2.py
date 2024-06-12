@@ -59,7 +59,7 @@ class PscAdios2Array(BackendArray):
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> Variable:
-        return self.datastore.acquire(needs_lock)[self._orig_varname]
+        return self.datastore.acquire(needs_lock).get_variable(self._orig_varname)
 
     def __getitem__(self, key: indexing.ExplicitIndexer):
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
