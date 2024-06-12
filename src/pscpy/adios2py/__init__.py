@@ -85,21 +85,14 @@ class Variable:
 
             raise RuntimeError(f"invalid args to __getitem__: {args}")
 
-        # print("A sel_start", sel_start, "sel_count",
-        #       sel_count, "arr_shape", arr_shape)
-
         for d in range(len(args), len(shape)):
             sel_start[d] = 0
             sel_count[d] = shape[d]
             arr_shape.append(sel_count[d])
 
-        # print("B sel_start", sel_start, "sel_count",
-        #       sel_count, "arr_shape", arr_shape)
-
         self._set_selection(sel_start, sel_count)
 
         arr = np.empty(arr_shape, dtype=self.dtype, order="F")  # FIXME is column-major correct?
-        # print("reading ", self.name, args)
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
