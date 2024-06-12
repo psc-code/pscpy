@@ -98,12 +98,12 @@ class PscAdios2Store(AbstractDataStore):
     def get_variables(self):
         fields_to_index = FieldToComponent(self._species_names)
 
-        vars = {}
+        variables = {}
         for varname in self.ds.variables:
             for field, idx in fields_to_index[varname].items():
-                vars[field] = (varname, idx)
+                variables[field] = (varname, idx)
 
-        return FrozenDict((k, self.open_store_variable(k, v)) for k, v in vars.items())
+        return FrozenDict((k, self.open_store_variable(k, v)) for k, v in variables.items())
 
     def open_store_variable(self, name, tpl):
         orig_varname, idx = tpl
@@ -132,8 +132,8 @@ def psc_open_dataset(
     filename_or_obj = _normalize_path(filename_or_obj)
     store = PscAdios2Store.open(filename_or_obj, species_names, length=length, corner=corner)
 
-    vars, attrs = store.load()
-    ds = xarray.Dataset(vars, attrs=attrs)
+    data_vars, attrs = store.load()
+    ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
     return ds
 
