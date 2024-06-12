@@ -5,7 +5,7 @@ import os
 from typing import Any, Iterable, Protocol, override
 
 import xarray
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
     BACKEND_ENTRYPOINTS,
@@ -60,13 +60,12 @@ class PscAdios2Array(BackendArray):
     def get_array(self, needs_lock: bool = True) -> Variable:
         return self.datastore._acquire(needs_lock)[self._orig_varname]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: indexing.ExplicitIndexer):
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
 
-    def _getitem(self, args):
+    def _getitem(self, args) -> NDArray:
         with self.datastore.lock:
-            array = self.get_array(needs_lock=False)
-            return array[(*args, self._component)]  # FIXME add ... in between
+            return self.get_array(needs_lock=False)[(*args, self._component)]  # FIXME add ... in between
 
 
 class PscAdios2Store(AbstractDataStore):
