@@ -123,7 +123,7 @@ class PscAdios2Store(AbstractDataStore):
 
         return FrozenDict((field, self.open_store_variable(field, *tup)) for field, tup in variables.items())
 
-    def open_store_variable(self, field: str, orig_varname: str, component: int):
+    def open_store_variable(self, field: str, orig_varname: str, component: int) -> xarray.DataArray:
         data = indexing.LazilyIndexedArray(PscAdios2Array(field, self, orig_varname, component))
         dims = ["x", "y", "z"]
         coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
