@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import io
 import os
+from typing import Any, Iterable
 
 import xarray
+from numpy.typing import ArrayLike
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
     BACKEND_ENTRYPOINTS,
@@ -119,7 +122,13 @@ class PscAdios2Store(AbstractDataStore):
         return FrozenDict((name, expandAttr(self.ds._io.InquireAttribute(name))) for name in self.ds.attributes)
 
 
-def psc_open_dataset(filename_or_obj, species_names, length=None, corner=None, drop_variables=None):
+def psc_open_dataset(
+    filename_or_obj,
+    species_names: list[str] | None = None,
+    length: ArrayLike | None = None,
+    corner: ArrayLike | None = None,
+    drop_variables: str | Iterable[str] | None = None,
+) -> xarray.Dataset:
     filename_or_obj = _normalize_path(filename_or_obj)
     store = PscAdios2Store.open(filename_or_obj, species_names, length=length, corner=corner)
 
@@ -134,14 +143,17 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
     def open_dataset(
         self,
-        filename_or_obj,
+        filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore,
         *,
-        drop_variables=None,
-        length=None,
-        corner=None,
-        species_names=None,  # e.g. ['e', 'i']; FIXME should be readable from file
+        drop_variables: str | Iterable[str] | None = None,
+        length: ArrayLike | None = None,
+        corner: ArrayLike | None = None,
+        species_names: Iterable[str] | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
         **kwargs: Any,
-    ):
+    ) -> xarray.Dataset:
+        if not isinstance(filename_or_obj, (str, os.PathLike)):
+            raise NotImplementedError()
+
         return psc_open_dataset(
             filename_or_obj,
             species_names,
