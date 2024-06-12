@@ -24,7 +24,7 @@ from xarray.core import indexing
 from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
-from . import adios2py
+from .adios2py import File
 from .psc import RunInfo, get_field_to_component
 
 
@@ -101,16 +101,16 @@ class PscAdios2Store(AbstractDataStore):
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])
 
-        manager = CachingFileManager(adios2py.File, filename, mode=mode)
+        manager = CachingFileManager(File, filename, mode=mode)
         return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
 
-    def _acquire(self, needs_lock=True):
+    def _acquire(self, needs_lock: bool = True) -> File:
         with self._manager.acquire_context(needs_lock) as root:
             ds = root
         return ds
 
     @property
-    def ds(self):
+    def ds(self) -> File:
         return self._acquire()
 
     @override
