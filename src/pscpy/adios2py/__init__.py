@@ -94,7 +94,7 @@ class Variable:
 
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(arr_shape, dtype=self.dtype, order="F")
+        arr = np.empty(arr_shape, dtype=self.dtype, order="F")  # FIXME is column-major correct?
         # print("reading ", self.name, args)
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
