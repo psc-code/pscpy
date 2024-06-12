@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 
 import adios2
 import adios2.stream
@@ -114,8 +115,8 @@ class File:
         self._engine = self._io.open(filename, adios2.bindings.Mode.Read)
         self._open_vars: dict[str, Variable] = {}
 
-        self.variables = self._io.available_variables().keys()
-        self.attributes = self._io.available_attributes().keys()
+        self.variable_names: Collection[str] = self._io.available_variables().keys()
+        self.attribute_names: Collection[str] = self._io.available_attributes().keys()
 
     def __enter__(self):
         logging.debug("adios2py: __enter__")
@@ -143,7 +144,7 @@ class File:
         self._io = None
         self._io_name = None
 
-    def __getitem__(self, varname):
+    def __getitem__(self, varname: str) -> Variable:
         var = Variable(self._io.inquire_variable(varname), self._engine)
         self._open_vars[varname] = var
         return var

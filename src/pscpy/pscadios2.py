@@ -117,7 +117,7 @@ class PscAdios2Store(AbstractDataStore):
         field_to_component = get_field_to_component(self._species_names)
 
         variables: dict[str, tuple[str, int]] = {}
-        for orig_varname in self.ds.variables:
+        for orig_varname in self.ds.variable_names:
             for field, component in field_to_component[orig_varname].items():
                 variables[field] = (orig_varname, component)
 
@@ -139,7 +139,7 @@ class PscAdios2Store(AbstractDataStore):
                 return data[0]
             return data
 
-        return FrozenDict((name, expand_attr(self.ds._io.inquire_attribute(name))) for name in self.ds.attributes)
+        return FrozenDict((name, expand_attr(self.ds._io.inquire_attribute(name))) for name in self.ds.attribute_names)
 
     @override
     def get_dimensions(self):
