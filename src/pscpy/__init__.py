@@ -19,4 +19,4 @@ import xarray as xr
 
 import pscpy.adios2py
 
-from . import pscadios2, pschdf5
+from . import pscadios2
