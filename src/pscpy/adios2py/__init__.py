@@ -79,7 +79,7 @@ class Variable:
 
             try:
                 idx = int(arg)
-            except:
+            except ValueError:
                 pass
             else:
                 if idx < 0:
