@@ -21,6 +21,7 @@ from xarray.backends.locks import (
     get_write_lock,
 )
 from xarray.core import indexing
+from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
 from . import adios2py
@@ -170,6 +171,10 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         except TypeError:
             return False
         return ext in {".bp"}
+
+    @override
+    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree:
+        raise NotImplementedError()
 
 
 if xarray.__version__ == "2023.4.1":
