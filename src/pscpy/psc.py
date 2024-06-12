@@ -54,7 +54,7 @@ class RunInfo:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 
-def get_field_to_index(species_names: Iterable[str]) -> dict[str, dict[str, int]]:
+def get_field_to_component(species_names: Iterable[str]) -> dict[str, dict[str, int]]:
     field_to_component: dict[str, dict[str, int]] = {}
     field_to_component["jeh"] = {
         "jx_ec": 0,

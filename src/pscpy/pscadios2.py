@@ -25,7 +25,7 @@ from xarray.core.datatree import DataTree
 from xarray.core.utils import FrozenDict
 
 from . import adios2py
-from .psc import get_field_to_index, RunInfo
+from .psc import get_field_to_component, RunInfo
 
 # adios2 is not thread safe
 ADIOS2_LOCK = SerializableLock()
@@ -97,17 +97,17 @@ class PscAdios2Store(AbstractDataStore):
 
     @override
     def get_variables(self):
-        field_to_index = get_field_to_index(self._species_names)
+        field_to_component = get_field_to_component(self._species_names)
 
         variables: dict[str, tuple[str, int]] = {}
         for orig_varname in self.ds.variables:
-            for field, idx in field_to_index[orig_varname].items():
-                variables[field] = (orig_varname, idx)
+            for field, component in field_to_component[orig_varname].items():
+                variables[field] = (orig_varname, component)
 
         return FrozenDict((field, self.open_store_variable(field, *tup)) for field, tup in variables.items())
 
-    def open_store_variable(self, field: str, orig_varname: str, idx: int):
-        data = indexing.LazilyIndexedArray(PscAdios2Array(field, self, orig_varname, idx))
+    def open_store_variable(self, field: str, orig_varname: str, component: int):
+        data = indexing.LazilyIndexedArray(PscAdios2Array(field, self, orig_varname, component))
         dims = ["x", "y", "z"]
         coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
         return xarray.DataArray(data, dims=dims, coords=coords)
