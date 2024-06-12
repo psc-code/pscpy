@@ -17,7 +17,7 @@ _dtype_map = {
 }
 
 
-class variable:
+class Variable:
     def __init__(self, var, engine):
         self._var = var
         self._engine = engine
@@ -111,7 +111,7 @@ class variable:
         return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
-class file:
+class File:
     def __init__(self, filename, mode="r"):
         logging.debug(f"adios2py: __init__ {filename}")
         assert mode == "r"
@@ -150,6 +150,6 @@ class file:
         self._io_name = None
 
     def __getitem__(self, varname):
-        var = variable(self._io.InquireVariable(varname), self._engine)
+        var = Variable(self._io.InquireVariable(varname), self._engine)
         self._open_vars[varname] = var
         return var

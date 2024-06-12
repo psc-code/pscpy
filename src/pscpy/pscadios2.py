@@ -79,7 +79,7 @@ class PscAdios2Store(AbstractDataStore):
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])
 
-        manager = CachingFileManager(adios2py.file, filename, mode=mode)
+        manager = CachingFileManager(adios2py.File, filename, mode=mode)
         return cls(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
 
     def _acquire(self, needs_lock=True):
