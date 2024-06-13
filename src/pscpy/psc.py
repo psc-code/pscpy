@@ -20,17 +20,16 @@ class RunInfo:
         var = next(iter(file.variable_names))
         self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
 
-        maybe_length_attr = file.get_attribute("length")
-        if maybe_length_attr:
-            self.corner = file.get_attribute("corner")
-        elif length is not None:
-            self.length = np.asarray(length)
-            if corner is not None:
-                self.corner = np.asarray(corner)
-            else:
-                self.corner = -0.5 * self.length
+        if "length" in file.attribute_names:
+            self.length = np.asarray(file.get_attribute("length"))
         else:
             self.length = self.gdims
+
+        if "corner" in file.attribute_names:
+            self.corner = np.asanyarray(file.get_attribute("corner"))
+        elif "length" in file.attribute_names:
+            self.corner = -0.5 * self.length
+        else:
             self.corner = np.array([0.0, 0.0, 0.0])
 
         self.x = np.linspace(
