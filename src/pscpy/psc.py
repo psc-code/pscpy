@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Iterable
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from .adios2py import File
 
@@ -32,24 +32,12 @@ class RunInfo:
         else:
             self.corner = np.array([0.0, 0.0, 0.0])
 
-        self.x = np.linspace(
-            self.corner[0],
-            self.corner[0] + self.length[0],
-            self.gdims[0],
-            endpoint=False,
-        )
-        self.y = np.linspace(
-            self.corner[1],
-            self.corner[1] + self.length[1],
-            self.gdims[1],
-            endpoint=False,
-        )
-        self.z = np.linspace(
-            self.corner[2],
-            self.corner[2] + self.length[2],
-            self.gdims[2],
-            endpoint=False,
-        )
+        self.x = self._get_coord(0)
+        self.y = self._get_coord(1)
+        self.z = self._get_coord(2)
+
+    def _get_coord(self, coord_idx: int) -> NDArray:
+        return np.linspace(self.corner[coord_idx], self.corner[coord_idx] + self.length[coord_idx], self.gdims[coord_idx], endpoint=False)
 
     def __repr__(self):
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
