@@ -8,7 +8,7 @@ import adios2
 import adios2.stream
 import numpy as np
 from adios2.adios import Adios
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
 
 _ad = Adios()
 
@@ -33,12 +33,12 @@ class Variable:
         if not self._var:
             raise ValueError("adios2py: variable is closed")
 
-    def _set_selection(self, start, count) -> None:
+    def _set_selection(self, start: ArrayLike, count: ArrayLike) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
 
-    def _shape(self):
+    def _shape(self) -> ArrayLike:
         self._assert_not_closed()
 
         return self._var.shape()[::-1]
