@@ -48,7 +48,7 @@ class Variable:
 
         return self._var.name()
 
-    def _dtype(self):
+    def _dtype(self) -> np.dtype:
         self._assert_not_closed()
 
         return adios2.type_adios_to_numpy(self._var.type())
