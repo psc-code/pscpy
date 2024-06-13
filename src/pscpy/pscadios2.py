@@ -69,6 +69,8 @@ class PscAdios2Array(BackendArray):
 
 
 class PscAdios2Store(AbstractDataStore):
+    """DataStore to facilitate loading an Adios2 file."""
+
     def __init__(
         self,
         manager: CachingFileManager,
@@ -153,6 +155,8 @@ def psc_open_dataset(
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
+    """Entrypoint that lets xarray recognize and read (PSC's) Adios2 output."""
+
     available = True
 
     @override
