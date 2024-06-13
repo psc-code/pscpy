@@ -6,6 +6,7 @@ from typing import Any, Iterable, Protocol, override
 
 import xarray
 from numpy.typing import ArrayLike, NDArray
+from typing_extensions import Never
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
     BACKEND_ENTRYPOINTS,
@@ -22,7 +23,7 @@ from xarray.backends.locks import (
 )
 from xarray.core import indexing
 from xarray.core.datatree import DataTree
-from xarray.core.utils import FrozenDict
+from xarray.core.utils import Frozen, FrozenDict
 
 from .adios2py import File, Variable
 from .psc import RunInfo, get_field_to_component
@@ -31,11 +32,11 @@ from .psc import RunInfo, get_field_to_component
 class Lock(Protocol):
     """Provides duck typing for xarray locks, which do not inherit from a common base class."""
 
-    def acquire(self, blocking=True): ...
-    def release(self): ...
-    def __enter__(self): ...
-    def __exit__(self, *args): ...
-    def locked(self): ...
+    def acquire(self, blocking: bool = True) -> bool: ...
+    def release(self) -> None: ...
+    def __enter__(self) -> None: ...
+    def __exit__(self, *args) -> None: ...
+    def locked(self) -> bool: ...
 
 
 # adios2 is not thread safe
@@ -48,7 +49,7 @@ class PscAdios2Array(BackendArray):
     This also takes care of slicing out the specific component of the data stored as 4-d array.
     """
 
-    def __init__(self, variable_name: str, datastore: PscAdios2Store, orig_varname: str, component: int):
+    def __init__(self, variable_name: str, datastore: PscAdios2Store, orig_varname: str, component: int) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
         self._orig_varname = orig_varname
@@ -60,7 +61,7 @@ class PscAdios2Array(BackendArray):
     def get_array(self, needs_lock: bool = True) -> Variable:
         return self.datastore.acquire(needs_lock).get_variable(self._orig_varname)
 
-    def __getitem__(self, key: indexing.ExplicitIndexer):
+    def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
 
     def _getitem(self, args) -> NDArray:
@@ -79,7 +80,7 @@ class PscAdios2Store(AbstractDataStore):
         lock: Lock = ADIOS2_LOCK,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
-    ):
+    ) -> None:
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)
@@ -114,7 +115,7 @@ class PscAdios2Store(AbstractDataStore):
         return self.acquire()
 
     @override
-    def get_variables(self):
+    def get_variables(self) -> Frozen:
         field_to_component = get_field_to_component(self._species_names)
 
         variables: dict[str, tuple[str, int]] = {}
@@ -131,11 +132,11 @@ class PscAdios2Store(AbstractDataStore):
         return xarray.DataArray(data, dims=dims, coords=coords)
 
     @override
-    def get_attrs(self):
+    def get_attrs(self) -> Frozen:
         return FrozenDict((name, self.ds.get_attribute(name)) for name in self.ds.attribute_names)
 
     @override
-    def get_dimensions(self):
+    def get_dimensions(self) -> Never:
         raise NotImplementedError()
 
 

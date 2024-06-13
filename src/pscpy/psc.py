@@ -23,7 +23,7 @@ class RunInfo:
     TODO: Should also know about timestep, species, whatever...
     """
 
-    def __init__(self, file: File, length: ArrayLike | None = None, corner: ArrayLike | None = None):
+    def __init__(self, file: File, length: ArrayLike | None = None, corner: ArrayLike | None = None) -> None:
         assert len(file.variable_names) > 0
         var = next(iter(file.variable_names))
         self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
@@ -38,7 +38,7 @@ class RunInfo:
     def _get_coord(self, coord_idx: int) -> NDArray:
         return np.linspace(self.corner[coord_idx], self.corner[coord_idx] + self.length[coord_idx], self.gdims[coord_idx], endpoint=False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 

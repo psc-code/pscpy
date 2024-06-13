@@ -16,7 +16,7 @@ _ad = Adios()
 class Variable:
     """Wrapper for an `adios2.Variable` object to facilitate loading and indexing into it."""
 
-    def __init__(self, var: adios2.Variable, engine: adios2.Engine):
+    def __init__(self, var: adios2.Variable, engine: adios2.Engine) -> None:
         self._var = var
         self._engine = engine
         self.name = self._name()
@@ -24,16 +24,16 @@ class Variable:
         self.dtype = self._dtype()
         logging.debug("variable __init__ var %s engine %s", var, engine)
 
-    def close(self):
+    def close(self) -> None:
         logging.debug("adios2py.variable close")
         self._var = None
         self._engine = None
 
-    def _assert_not_closed(self):
+    def _assert_not_closed(self) -> None:
         if not self._var:
             raise ValueError("adios2py: variable is closed")
 
-    def _set_selection(self, start, count):
+    def _set_selection(self, start, count) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
@@ -98,14 +98,14 @@ class Variable:
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    def __init__(self, filename: str, mode: str = "r"):
+    def __init__(self, filename: str, mode: str = "r") -> None:
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
         self._io_name = f"io-{filename}"
@@ -116,20 +116,20 @@ class File:
         self.variable_names: Collection[str] = self._io.available_variables().keys()
         self.attribute_names: Collection[str] = self._io.available_attributes().keys()
 
-    def __enter__(self):
+    def __enter__(self) -> File:
         logging.debug("adios2py: __enter__")
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
+    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
         logging.debug("adios2py: __exit__")
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         logging.debug("adios2py: __del__")
         if self._engine:
             self.close()
 
-    def close(self):
+    def close(self) -> None:
         logging.debug("adios2py: close")
         logging.debug("open vars %s", self._open_vars)
         for var in self._open_vars.values():
