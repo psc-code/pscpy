@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Iterable
 
 import numpy as np
+from numpy.typing import ArrayLike
+
+from .adios2py import File
 
 
 class RunInfo:
@@ -12,15 +15,14 @@ class RunInfo:
     TODO: Should also know about timestep, species, whatever...
     """
 
-    def __init__(self, file, length=None, corner=None):
-        assert len(file.variables) > 0
-        var = next(iter(file.variables))
-        self.gdims = np.asarray(file[var].shape)[0:3]
+    def __init__(self, file: File, length: ArrayLike | None = None, corner: ArrayLike | None = None):
+        assert len(file.variable_names) > 0
+        var = next(iter(file.variable_names))
+        self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
 
-        maybe_length_attr = file._io.InquireAttribute("length")
+        maybe_length_attr = file.get_attribute("length")
         if maybe_length_attr:
-            self.length = maybe_length_attr.Data()
-            self.corner = file._io.InquireAttribute("corner").Data()
+            self.corner = file.get_attribute("corner")
         elif length is not None:
             self.length = np.asarray(length)
             if corner is not None:
