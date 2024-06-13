@@ -46,7 +46,7 @@ class Variable:
     def _name(self) -> str:
         self._assert_not_closed()
 
-        return self._var.name()
+        return self._var.name()  # type: ignore[no-any-return]
 
     def _dtype(self) -> np.dtype:
         self._assert_not_closed()
