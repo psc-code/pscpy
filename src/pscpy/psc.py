@@ -8,6 +8,14 @@ from numpy.typing import ArrayLike, NDArray
 from .adios2py import File
 
 
+def _get_array_attribute(file: File, attribute_name: str, default: ArrayLike | None) -> NDArray:
+    if attribute_name in file.attribute_names:
+        return np.asarray(file.get_attribute(attribute_name))
+    if default is not None:
+        return np.asarray(default)
+    raise KeyError(f"Missing attribute '{attribute_name}' with no default specified.")
+
+
 class RunInfo:
     """Global information about the PSC run
 
@@ -20,21 +28,8 @@ class RunInfo:
         var = next(iter(file.variable_names))
         self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
 
-        if length is not None:
-            self.length = np.asarray(length)
-        elif "length" in file.attribute_names:
-            self.length = np.asarray(file.get_attribute("length"))
-        else:
-            self.length = self.gdims
-
-        if corner is not None:
-            self.corner = np.asarray(corner)
-        elif "corner" in file.attribute_names:
-            self.corner = np.asanyarray(file.get_attribute("corner"))
-        elif "length" in file.attribute_names:
-            self.corner = -0.5 * self.length
-        else:
-            self.corner = np.array([0.0, 0.0, 0.0])
+        self.length = _get_array_attribute(file, "length", length)
+        self.corner = _get_array_attribute(file, "corner", corner)
 
         self.x = self._get_coord(0)
         self.y = self._get_coord(1)
