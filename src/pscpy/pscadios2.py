@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import io
 import os
-from typing import Any, Iterable, Protocol, override
+from typing import Any, Iterable, Protocol
 
 import xarray
 from numpy.typing import ArrayLike, NDArray
-from typing_extensions import Never
+from typing_extensions import Never, override
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
     BACKEND_ENTRYPOINTS,
