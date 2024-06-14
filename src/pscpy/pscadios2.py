@@ -142,7 +142,7 @@ class PscAdios2Store(AbstractDataStore):
 
 def psc_open_dataset(
     filename_or_obj,
-    species_names: list[str] | None = None,
+    species_names: Iterable[str] | None = None,
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
