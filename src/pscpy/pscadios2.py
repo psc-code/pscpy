@@ -158,6 +158,7 @@ def psc_open_dataset(
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     """Entrypoint that lets xarray recognize and read (PSC's) Adios2 output."""
 
+    open_dataset_parameters = ("filename_or_obj", "drop_variables")
     available = True
 
     @override
@@ -180,8 +181,6 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             length=length,
             corner=corner,
         )
-
-    open_dataset_parameters = ["filename_or_obj", "drop_variables"]
 
     @override
     def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
