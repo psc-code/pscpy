@@ -9,6 +9,7 @@ import adios2.stream
 import numpy as np
 from adios2.adios import Adios
 from numpy.typing import ArrayLike, NDArray
+from typing_extensions import TypeGuard
 
 _ad = Adios()
 
@@ -110,6 +111,10 @@ class FileState:
         self.io = _ad.declare_io(self.io_name)
         self.engine = self.io.open(filename, adios2.bindings.Mode.Read)
 
+    @staticmethod
+    def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
+        return maybe_state is not None
+
 
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
@@ -135,10 +140,12 @@ class File:
 
     def __del__(self) -> None:
         logging.debug("adios2py: __del__")
-        if self._state:
+        if FileState.is_open(self._state):
             self.close()
 
     def close(self) -> None:
+        assert FileState.is_open(self._state)
+
         logging.debug("adios2py: close")
         logging.debug("open vars %s", self._open_vars)
         for var in self._open_vars.values():
@@ -149,11 +156,15 @@ class File:
         self._state = None
 
     def get_variable(self, variable_name: str) -> Variable:
+        assert FileState.is_open(self._state)
+
         var = Variable(self._state.io.inquire_variable(variable_name), self._state.engine)
         self._open_vars[variable_name] = var
         return var
 
     def get_attribute(self, attribute_name: str) -> Any:
+        assert FileState.is_open(self._state)
+
         adios2_attr = self._state.io.inquire_attribute(attribute_name)
         data = adios2_attr.data()
         # FIXME use SingleValue when writing data to avoid doing this (?)
