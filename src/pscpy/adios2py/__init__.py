@@ -102,19 +102,28 @@ class Variable:
         return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
+class FileState:
+    """Collects the state of a `File` to reflect the fact that they are coupled."""
+
+    def __init__(self, filename: str) -> None:
+        self.io_name = f"io-{filename}"
+        self.io = _ad.declare_io(self.io_name)
+        self.engine = self.io.open(filename, adios2.bindings.Mode.Read)
+
+
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
+
+    _state: FileState | None
 
     def __init__(self, filename: str, mode: str = "r") -> None:
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
-        self._io_name = f"io-{filename}"
-        self._io = _ad.declare_io(self._io_name)
-        self._engine = self._io.open(filename, adios2.bindings.Mode.Read)
+        self._state = FileState(filename)
         self._open_vars: dict[str, Variable] = {}
 
-        self.variable_names: Collection[str] = self._io.available_variables().keys()
-        self.attribute_names: Collection[str] = self._io.available_attributes().keys()
+        self.variable_names: Collection[str] = self._state.io.available_variables().keys()
+        self.attribute_names: Collection[str] = self._state.io.available_attributes().keys()
 
     def __enter__(self) -> File:
         logging.debug("adios2py: __enter__")
@@ -126,7 +135,7 @@ class File:
 
     def __del__(self) -> None:
         logging.debug("adios2py: __del__")
-        if self._engine:
+        if self._state:
             self.close()
 
     def close(self) -> None:
@@ -135,20 +144,17 @@ class File:
         for var in self._open_vars.values():
             var.close()
 
-        self._engine.close()
-        self._engine = None
-
-        _ad.remove_io(self._io_name)
-        self._io = None
-        self._io_name = None
+        self._state.engine.close()
+        _ad.remove_io(self._state.io_name)
+        self._state = None
 
     def get_variable(self, variable_name: str) -> Variable:
-        var = Variable(self._io.inquire_variable(variable_name), self._engine)
+        var = Variable(self._state.io.inquire_variable(variable_name), self._state.engine)
         self._open_vars[variable_name] = var
         return var
 
     def get_attribute(self, attribute_name: str) -> Any:
-        adios2_attr = self._io.inquire_attribute(attribute_name)
+        adios2_attr = self._state.io.inquire_attribute(attribute_name)
         data = adios2_attr.data()
         # FIXME use SingleValue when writing data to avoid doing this (?)
         if len(data) == 1:
