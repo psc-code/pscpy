@@ -192,7 +192,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         return ext in {".bp"}
 
     @override
-    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree:
+    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree[Any]:
         raise NotImplementedError()
 
 
