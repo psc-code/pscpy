@@ -185,11 +185,10 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
     @override
     def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
-        try:
+        if isinstance(filename_or_obj, (str, os.PathLike)):
             _, ext = os.path.splitext(filename_or_obj)
-        except TypeError:
-            return False
-        return ext in {".bp"}
+            return ext in {".bp"}
+        return False
 
     @override
     def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree[Any]:
