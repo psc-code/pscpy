@@ -196,9 +196,4 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         raise NotImplementedError()
 
 
-if xarray.__version__ == "2023.4.1":
-    # FIXME determine exactly when the API changed
-    BACKEND_ENTRYPOINTS["pscadios2"] = ("psc", PscAdios2BackendEntrypoint)
-else:
-    # API of version 0.19.0
-    BACKEND_ENTRYPOINTS["pscadios2"] = PscAdios2BackendEntrypoint
+BACKEND_ENTRYPOINTS["pscadios2"] = ("psc", PscAdios2BackendEntrypoint)
