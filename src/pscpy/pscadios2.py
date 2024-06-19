@@ -4,6 +4,7 @@ import io
 import os
 from typing import Any, Iterable, Protocol
 
+import numpy as np
 import xarray
 from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
@@ -64,7 +65,7 @@ class PscAdios2Array(BackendArray):
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
 
-    def _getitem(self, args) -> NDArray:
+    def _getitem(self, args) -> NDArray[np.floating[Any]]:
         with self.datastore.lock:
             return self.get_array(needs_lock=False)[(*args, self._component)]  # FIXME add ... in between
 
