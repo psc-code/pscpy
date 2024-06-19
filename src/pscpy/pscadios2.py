@@ -108,6 +108,7 @@ class PscAdios2Store(AbstractDataStore):
     def acquire(self, needs_lock: bool = True) -> File:
         with self._manager.acquire_context(needs_lock) as root:
             ds = root
+        assert isinstance(ds, File)
         return ds
 
     @property
