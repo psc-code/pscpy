@@ -115,7 +115,7 @@ class PscAdios2Store(AbstractDataStore):
         return self.acquire()
 
     @override
-    def get_variables(self) -> Frozen:
+    def get_variables(self) -> Frozen[str, xarray.DataArray]:
         field_to_component = get_field_to_component(self._species_names)
 
         variables: dict[str, tuple[str, int]] = {}
@@ -132,7 +132,7 @@ class PscAdios2Store(AbstractDataStore):
         return xarray.DataArray(data, dims=dims, coords=coords)
 
     @override
-    def get_attrs(self) -> Frozen:
+    def get_attrs(self) -> Frozen[str, Any]:
         return FrozenDict((name, self.ds.get_attribute(name)) for name in self.ds.attribute_names)
 
     @override
