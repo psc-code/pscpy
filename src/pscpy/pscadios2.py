@@ -142,7 +142,7 @@ class PscAdios2Store(AbstractDataStore):
 
 def psc_open_dataset(
     filename_or_obj,
-    species_names: Iterable[str] | None = None,
+    species_names: Iterable[str],
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
@@ -174,6 +174,9 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     ) -> xarray.Dataset:
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
+
+        if species_names is None:
+            raise ValueError(f"Missing required keyword argument: '{species_names=}'")
 
         return psc_open_dataset(
             filename_or_obj,
