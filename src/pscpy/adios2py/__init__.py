@@ -52,7 +52,7 @@ class Variable:
     def _dtype(self) -> np.dtype:
         self._assert_not_closed()
 
-        return adios2.type_adios_to_numpy(self._var.type())
+        return adios2.type_adios_to_numpy(self._var.type())()
 
     def __getitem__(self, args: Any) -> NDArray:
         self._assert_not_closed()
