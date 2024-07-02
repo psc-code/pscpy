@@ -100,7 +100,7 @@ class Variable:
         return arr
 
     def __repr__(self) -> str:
-        return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
+        return f"{self.__class__.__module__}.{self.__class__.__name__}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
 class FileState:
