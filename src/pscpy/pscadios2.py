@@ -199,4 +199,4 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         raise NotImplementedError()
 
 
-BACKEND_ENTRYPOINTS["pscadios2"] = ("psc", PscAdios2BackendEntrypoint)
+BACKEND_ENTRYPOINTS["pscadios2"] = ("pscpy", PscAdios2BackendEntrypoint)
