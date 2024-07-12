@@ -4,10 +4,10 @@ import logging
 from collections.abc import Collection
 from typing import Any
 
-import adios2
-import adios2.stream
+import adios2  # type: ignore[import-untyped]
+import adios2.stream  # type: ignore[import-untyped]
 import numpy as np
-from adios2.adios import Adios
+from adios2.adios import Adios  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
