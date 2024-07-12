@@ -8,7 +8,7 @@ import adios2
 import adios2.stream
 import numpy as np
 from adios2.adios import Adios
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
 _ad = Adios()
@@ -34,7 +34,7 @@ class Variable:
         if not self._var:
             raise ValueError("adios2py: variable is closed")
 
-    def _set_selection(self, start: ArrayLike, count: ArrayLike) -> None:
+    def _set_selection(self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
