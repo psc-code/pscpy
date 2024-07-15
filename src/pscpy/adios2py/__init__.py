@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Collection
-from typing import Any, SupportsInt
 from types import TracebackType
+from typing import Any, SupportsInt
 
 import adios2  # type: ignore[import-untyped]
 import adios2.stream  # type: ignore[import-untyped]
