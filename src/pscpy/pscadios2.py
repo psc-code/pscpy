@@ -84,7 +84,7 @@ class PscAdios2Store(AbstractDataStore):
     ) -> None:
         self._manager = manager
         self._mode = mode
-        self.lock: Lock = ensure_lock(lock)
+        self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
         self.psc = RunInfo(self.ds, length=length, corner=corner)
         self._species_names = species_names
 
@@ -101,7 +101,7 @@ class PscAdios2Store(AbstractDataStore):
             if mode == "r":
                 lock = ADIOS2_LOCK
             else:
-                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])
+                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
         manager = CachingFileManager(File, filename, mode=mode)
         return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
@@ -148,10 +148,10 @@ def psc_open_dataset(
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
-    filename = _normalize_path(filename_or_obj)
+    filename = _normalize_path(filename_or_obj)  # type: ignore[no-untyped-call]
     store = PscAdios2Store.open(filename, species_names, length=length, corner=corner)
 
-    data_vars, attrs = store.load()
+    data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
     return ds
