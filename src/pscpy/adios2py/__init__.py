@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Collection
 from typing import Any
+from types import TracebackType
 
 import adios2  # type: ignore[import-untyped]
 import adios2.stream  # type: ignore[import-untyped]
@@ -135,7 +136,7 @@ class File:
         logging.debug("adios2py: __enter__")
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
+    def __exit__(self, exception_type: type[BaseException] | None, exception: BaseException | None, traceback: TracebackType | None) -> None:
         logging.debug("adios2py: __exit__")
         self.close()
 
