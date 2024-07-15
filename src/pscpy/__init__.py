@@ -6,7 +6,7 @@ pscpy: Python utilities for reading PSC data
 
 from __future__ import annotations
 
-from pscpy import pscadios2
+from pscpy import pscadios2  # noqa: F401
 
 from ._version import version as __version__
 
