@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import pathlib
 from typing import Any, Iterable, Protocol, SupportsInt
 
 import numpy as np
@@ -191,7 +192,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     @override
     def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
         if isinstance(filename_or_obj, (str, os.PathLike)):
-            _, ext = os.path.splitext(filename_or_obj)
+            ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
         return False
 
