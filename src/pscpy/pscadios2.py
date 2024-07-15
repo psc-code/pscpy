@@ -98,7 +98,7 @@ class PscAdios2Store(AbstractDataStore):
         corner: ArrayLike | None = None,
     ) -> PscAdios2Store:
         if lock is None:
-            if mode == "r":
+            if mode == "r":  # noqa: SIM108
                 lock = ADIOS2_LOCK
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
