@@ -166,9 +166,4 @@ class File:
     def get_attribute(self, attribute_name: str) -> Any:
         assert FileState.is_open(self._state)
 
-        adios2_attr = self._state.io.inquire_attribute(attribute_name)
-        data = adios2_attr.data()
-        # FIXME use SingleValue when writing data to avoid doing this (?)
-        if len(data) == 1:
-            return data[0]
-        return data
+        return self._state.io.inquire_attribute(attribute_name).data()
