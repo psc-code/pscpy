@@ -55,7 +55,7 @@ class Variable:
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))
 
-    def __getitem__(self, args: Any) -> NDArray:
+    def __getitem__(self, args: Any) -> NDArray[Any]:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
