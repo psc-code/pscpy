@@ -40,11 +40,10 @@ class Variable:
 
         self._var.set_selection((start[::-1], count[::-1]))
 
-    def _shape(self) -> list[int]:
+    def _shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
 
-        shape_reversed: list[int] = self._var.shape()
-        return shape_reversed[::-1]
+        return tuple(self._var.shape())[::-1]
 
     def _name(self) -> str:
         self._assert_not_closed()
