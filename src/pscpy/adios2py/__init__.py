@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Collection
-from typing import Any
+from typing import Any, SupportsInt
 from types import TracebackType
 
 import adios2  # type: ignore[import-untyped]
@@ -56,7 +56,7 @@ class Variable:
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))
 
-    def __getitem__(self, args: Any) -> NDArray[Any]:
+    def __getitem__(self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]) -> NDArray[Any]:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
