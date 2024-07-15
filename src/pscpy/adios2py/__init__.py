@@ -50,10 +50,10 @@ class Variable:
 
         return self._var.name()  # type: ignore[no-any-return]
 
-    def _dtype(self) -> np.dtype:
+    def _dtype(self) -> np.dtype[Any]:
         self._assert_not_closed()
 
-        return adios2.type_adios_to_numpy(self._var.type())()
+        return np.dtype(adios2.type_adios_to_numpy(self._var.type()))
 
     def __getitem__(self, args: Any) -> NDArray:
         self._assert_not_closed()
