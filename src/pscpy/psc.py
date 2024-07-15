@@ -13,7 +13,8 @@ def _get_array_attribute(file: File, attribute_name: str, default: ArrayLike | N
         return np.asarray(file.get_attribute(attribute_name))
     if default is not None:
         return np.asarray(default)
-    raise KeyError(f"Missing attribute '{attribute_name}' with no default specified.")
+    error_messsage = f"Missing attribute '{attribute_name}' with no default specified."
+    raise KeyError(error_messsage)
 
 
 class RunInfo:

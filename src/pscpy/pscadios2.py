@@ -178,7 +178,8 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             raise NotImplementedError()
 
         if species_names is None:
-            raise ValueError(f"Missing required keyword argument: '{species_names=}'")
+            error_message = f"Missing required keyword argument: '{species_names=}'"
+            raise ValueError(error_message)
 
         return psc_open_dataset(
             filename_or_obj,

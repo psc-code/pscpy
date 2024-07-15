@@ -33,7 +33,8 @@ class Variable:
 
     def _assert_not_closed(self) -> None:
         if not self._var:
-            raise ValueError("adios2py: variable is closed")
+            error_message = "adios2py: variable is closed"
+            raise ValueError(error_message)
 
     def _set_selection(self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]) -> None:
         self._assert_not_closed()
@@ -87,7 +88,8 @@ class Variable:
                 sel_count[d] = 1
                 continue
 
-            raise RuntimeError(f"invalid args to __getitem__: {args}")
+            error_message = f"invalid args to __getitem__: {args}"
+            raise RuntimeError(error_message)
 
         for d in range(len(args), len(shape)):
             sel_start[d] = 0
