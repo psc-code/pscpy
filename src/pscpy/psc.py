@@ -1,6 +1,19 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
+
+from .adios2py import File
+
+
+def _get_array_attribute(file: File, attribute_name: str, default: ArrayLike | None) -> NDArray:
+    if attribute_name in file.attribute_names:
+        return np.asarray(file.get_attribute(attribute_name))
+    if default is not None:
+        return np.asarray(default)
+    raise KeyError(f"Missing attribute '{attribute_name}' with no default specified.")
 
 
 class RunInfo:
@@ -10,51 +23,28 @@ class RunInfo:
     TODO: Should also know about timestep, species, whatever...
     """
 
-    def __init__(self, file, length=None, corner=None):
-        assert len(file.variables) > 0
-        var = next(iter(file.variables))
-        self.gdims = np.asarray(file[var].shape)[0:3]
+    def __init__(self, file: File, length: ArrayLike | None = None, corner: ArrayLike | None = None) -> None:
+        assert len(file.variable_names) > 0
+        var = next(iter(file.variable_names))
+        self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
 
-        maybe_length_attr = file._io.InquireAttribute("length")
-        if maybe_length_attr:
-            self.length = maybe_length_attr.Data()
-            self.corner = file._io.InquireAttribute("corner").Data()
-        elif length is not None:
-            self.length = np.asarray(length)
-            if corner is not None:
-                self.corner = np.asarray(corner)
-            else:
-                self.corner = -0.5 * self.length
-        else:
-            self.length = self.gdims
-            self.corner = np.array([0.0, 0.0, 0.0])
+        self.length = _get_array_attribute(file, "length", length)
+        self.corner = _get_array_attribute(file, "corner", corner)
 
-        self.x = np.linspace(
-            self.corner[0],
-            self.corner[0] + self.length[0],
-            self.gdims[0],
-            endpoint=False,
-        )
-        self.y = np.linspace(
-            self.corner[1],
-            self.corner[1] + self.length[1],
-            self.gdims[1],
-            endpoint=False,
-        )
-        self.z = np.linspace(
-            self.corner[2],
-            self.corner[2] + self.length[2],
-            self.gdims[2],
-            endpoint=False,
-        )
+        self.x = self._get_coord(0)
+        self.y = self._get_coord(1)
+        self.z = self._get_coord(2)
 
-    def __repr__(self):
+    def _get_coord(self, coord_idx: int) -> NDArray:
+        return np.linspace(self.corner[coord_idx], self.corner[coord_idx] + self.length[coord_idx], self.gdims[coord_idx], endpoint=False)
+
+    def __repr__(self) -> str:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 
-def FieldToComponent(species):
-    map = dict()
-    map["jeh"] = {
+def get_field_to_component(species_names: Iterable[str]) -> dict[str, dict[str, int]]:
+    field_to_component: dict[str, dict[str, int]] = {}
+    field_to_component["jeh"] = {
         "jx_ec": 0,
         "jy_ec": 1,
         "jz_ec": 2,
@@ -65,14 +55,14 @@ def FieldToComponent(species):
         "hy_fc": 7,
         "hz_fc": 8,
     }
-    map["dive"] = {"dive": 0}
-    map["rho"] = {"rho": 0}
-    map["d_rho"] = {"d_rho": 0}
-    map["div_j"] = {"div_j": 0}
+    field_to_component["dive"] = {"dive": 0}
+    field_to_component["rho"] = {"rho": 0}
+    field_to_component["d_rho"] = {"d_rho": 0}
+    field_to_component["div_j"] = {"div_j": 0}
 
     # keeping 'all_1st' for backwards compatibility
-    map["all_1st"] = {}
-    map["all_1st_cc"] = {}
+    field_to_component["all_1st"] = {}
+    field_to_component["all_1st_cc"] = {}
     moments = [
         "rho",
         "jx",
@@ -88,9 +78,9 @@ def FieldToComponent(species):
         "tyz",
         "tzx",
     ]
-    for i_sp, sp in enumerate(species):
-        for i_mom, mom in enumerate(moments):
-            map["all_1st"][f"{mom}_{sp}"] = i_mom + 13 * i_sp
-            map["all_1st_cc"][f"{mom}_{sp}"] = i_mom + 13 * i_sp
+    for species_idx, species_name in enumerate(species_names):
+        for moment_idx, moment in enumerate(moments):
+            field_to_component["all_1st"][f"{moment}_{species_name}"] = moment_idx + 13 * species_idx
+            field_to_component["all_1st_cc"][f"{moment}_{species_name}"] = moment_idx + 13 * species_idx
 
-    return map
+    return field_to_component

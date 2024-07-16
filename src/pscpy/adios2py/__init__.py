@@ -1,61 +1,60 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
+from typing import Any
 
 import adios2
+import adios2.stream
 import numpy as np
+from adios2.adios import Adios
+from numpy.typing import ArrayLike, NDArray
+from typing_extensions import TypeGuard
 
-_ad = adios2.Adios()
-
-_dtype_map = {
-    "float": np.float32,
-    "double": np.float64,
-    "uint64_t": np.uint64,
-    "int64_t": np.int64,
-    "int32_t": np.int32,
-    "uint32_t": np.uint32,
-}
+_ad = Adios()
 
 
-class variable:
-    def __init__(self, var, engine):
+class Variable:
+    """Wrapper for an `adios2.Variable` object to facilitate loading and indexing into it."""
+
+    def __init__(self, var: adios2.Variable, engine: adios2.Engine) -> None:
         self._var = var
         self._engine = engine
         self.name = self._name()
         self.shape = self._shape()
         self.dtype = self._dtype()
-        logging.debug(f"variable __init__ var {var} engine {engine}")
+        logging.debug("variable __init__ var %s engine %s", var, engine)
 
-    def close(self):
+    def close(self) -> None:
         logging.debug("adios2py.variable close")
         self._var = None
         self._engine = None
 
-    def _assert_not_closed(self):
+    def _assert_not_closed(self) -> None:
         if not self._var:
             raise ValueError("adios2py: variable is closed")
 
-    def _set_selection(self, start, count):
+    def _set_selection(self, start: ArrayLike, count: ArrayLike) -> None:
         self._assert_not_closed()
 
-        self._var.SetSelection((start[::-1], count[::-1]))
+        self._var.set_selection((start[::-1], count[::-1]))
 
-    def _shape(self):
+    def _shape(self) -> ArrayLike:
         self._assert_not_closed()
 
-        return self._var.Shape()[::-1]
+        return self._var.shape()[::-1]
 
-    def _name(self):
+    def _name(self) -> str:
         self._assert_not_closed()
 
-        return self._var.Name()
+        return self._var.name()  # type: ignore[no-any-return]
 
-    def _dtype(self):
+    def _dtype(self) -> np.dtype:
         self._assert_not_closed()
 
-        return _dtype_map[self._var.Type()]
+        return adios2.type_adios_to_numpy(self._var.type())
 
-    def __getitem__(self, args):
+    def __getitem__(self, args: Any) -> NDArray:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
@@ -78,7 +77,7 @@ class variable:
 
             try:
                 idx = int(arg)
-            except:
+            except ValueError:
                 pass
             else:
                 if idx < 0:
@@ -89,67 +88,86 @@ class variable:
 
             raise RuntimeError(f"invalid args to __getitem__: {args}")
 
-        # print("A sel_start", sel_start, "sel_count",
-        #       sel_count, "arr_shape", arr_shape)
-
         for d in range(len(args), len(shape)):
             sel_start[d] = 0
             sel_count[d] = shape[d]
             arr_shape.append(sel_count[d])
 
-        # print("B sel_start", sel_start, "sel_count",
-        #       sel_count, "arr_shape", arr_shape)
-
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(arr_shape, dtype=self.dtype, order="F")
-        # print("reading ", self.name, args)
-        self._engine.Get(self._var, arr, adios2.Mode.Sync)
+        arr = np.empty(arr_shape, dtype=self.dtype, order="F")  # FIXME is column-major correct?
+        self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
-class file:
-    def __init__(self, filename, mode="r"):
-        logging.debug(f"adios2py: __init__ {filename}")
+class FileState:
+    """Collects the state of a `File` to reflect the fact that they are coupled."""
+
+    def __init__(self, filename: str) -> None:
+        self.io_name = f"io-{filename}"
+        self.io = _ad.declare_io(self.io_name)
+        self.engine = self.io.open(filename, adios2.bindings.Mode.Read)
+
+    @staticmethod
+    def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
+        return maybe_state is not None
+
+
+class File:
+    """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
+
+    _state: FileState | None
+
+    def __init__(self, filename: str, mode: str = "r") -> None:
+        logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
-        self._io_name = f"io-{filename}"
-        self._io = _ad.DeclareIO(self._io_name)
-        self._engine = self._io.Open(filename, adios2.Mode.Read)
-        self._open_vars = {}
+        self._state = FileState(filename)
+        self._open_vars: dict[str, Variable] = {}
 
-        self.variables = self._io.AvailableVariables().keys()
-        self.attributes = self._io.AvailableAttributes().keys()
+        self.variable_names: Collection[str] = self._state.io.available_variables().keys()
+        self.attribute_names: Collection[str] = self._state.io.available_attributes().keys()
 
-    def __enter__(self):
+    def __enter__(self) -> File:
         logging.debug("adios2py: __enter__")
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
         logging.debug("adios2py: __exit__")
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         logging.debug("adios2py: __del__")
-        if self._engine:
+        if FileState.is_open(self._state):
             self.close()
 
-    def close(self):
+    def close(self) -> None:
+        assert FileState.is_open(self._state)
+
         logging.debug("adios2py: close")
-        logging.debug(f"open vars {self._open_vars}")
-        for varname, var in self._open_vars.items():
+        logging.debug("open vars %s", self._open_vars)
+        for var in self._open_vars.values():
             var.close()
 
-        self._engine.Close()
-        self._engine = None
+        self._state.engine.close()
+        _ad.remove_io(self._state.io_name)
+        self._state = None
 
-        _ad.RemoveIO(self._io_name)
-        self._io = None
-        self._io_name = None
+    def get_variable(self, variable_name: str) -> Variable:
+        assert FileState.is_open(self._state)
 
-    def __getitem__(self, varname):
-        var = variable(self._io.InquireVariable(varname), self._engine)
-        self._open_vars[varname] = var
+        var = Variable(self._state.io.inquire_variable(variable_name), self._state.engine)
+        self._open_vars[variable_name] = var
         return var
+
+    def get_attribute(self, attribute_name: str) -> Any:
+        assert FileState.is_open(self._state)
+
+        adios2_attr = self._state.io.inquire_attribute(attribute_name)
+        data = adios2_attr.data()
+        # FIXME use SingleValue when writing data to avoid doing this (?)
+        if len(data) == 1:
+            return data[0]
+        return data

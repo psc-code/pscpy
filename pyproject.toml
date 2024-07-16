@@ -33,6 +33,7 @@ dynamic = ["version"]
 dependencies = [
   "xarray",
   "adios2",
+  "typing-extensions",
 ]
 
 [project.optional-dependencies]
