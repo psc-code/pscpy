@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 2024.04.23
+_src_path: gh:scientific-python/cookie
+backend: skbuild
+email: kai.germaschewski@gmail.com
+full_name: Kai Germaschewski
+license: BSD
+org: psc-code
+project_name: pscpy
+project_short_description: Python utilities for reading PSC data
+url: https://github.com/psc-code/pscpy
+vcs: true
