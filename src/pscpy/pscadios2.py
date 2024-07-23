@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import pathlib
 from typing import Any, Iterable, Protocol, SupportsInt
 
 import numpy as np
@@ -98,7 +99,7 @@ class PscAdios2Store(AbstractDataStore):
         corner: ArrayLike | None = None,
     ) -> PscAdios2Store:
         if lock is None:
-            if mode == "r":
+            if mode == "r":  # noqa: SIM108
                 lock = ADIOS2_LOCK
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
@@ -178,7 +179,8 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             raise NotImplementedError()
 
         if species_names is None:
-            raise ValueError(f"Missing required keyword argument: '{species_names=}'")
+            error_message = f"Missing required keyword argument: '{species_names=}'"
+            raise ValueError(error_message)
 
         return psc_open_dataset(
             filename_or_obj,
@@ -190,7 +192,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     @override
     def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
         if isinstance(filename_or_obj, (str, os.PathLike)):
-            _, ext = os.path.splitext(filename_or_obj)
+            ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
         return False
 
