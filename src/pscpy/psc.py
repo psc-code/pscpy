@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -8,7 +8,7 @@ from numpy.typing import ArrayLike, NDArray
 from .adios2py import File
 
 
-def _get_array_attribute(file: File, attribute_name: str, default: ArrayLike | None) -> NDArray:
+def _get_array_attribute(file: File, attribute_name: str, default: ArrayLike | None) -> NDArray[np.floating[Any]]:
     if attribute_name in file.attribute_names:
         return np.asarray(file.get_attribute(attribute_name))
     if default is not None:
@@ -35,8 +35,13 @@ class RunInfo:
         self.y = self._get_coord(1)
         self.z = self._get_coord(2)
 
-    def _get_coord(self, coord_idx: int) -> NDArray:
-        return np.linspace(self.corner[coord_idx], self.corner[coord_idx] + self.length[coord_idx], self.gdims[coord_idx], endpoint=False)
+    def _get_coord(self, coord_idx: int) -> NDArray[np.floating[Any]]:
+        return np.linspace(  # type: ignore[no-any-return]
+            start=self.corner[coord_idx],
+            stop=self.corner[coord_idx] + self.length[coord_idx],
+            num=self.gdims[coord_idx],
+            endpoint=False,
+        )
 
     def __repr__(self) -> str:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"

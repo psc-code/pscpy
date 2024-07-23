@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Collection
-from typing import Any
+from types import TracebackType
+from typing import Any, SupportsInt
 
-import adios2
-import adios2.stream
+import adios2  # type: ignore[import-untyped]
+import adios2.stream  # type: ignore[import-untyped]
 import numpy as np
-from adios2.adios import Adios
-from numpy.typing import ArrayLike, NDArray
+from adios2.adios import Adios  # type: ignore[import-untyped]
+from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
 _ad = Adios()
@@ -34,27 +35,27 @@ class Variable:
         if not self._var:
             raise ValueError("adios2py: variable is closed")
 
-    def _set_selection(self, start: ArrayLike, count: ArrayLike) -> None:
+    def _set_selection(self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
 
-    def _shape(self) -> ArrayLike:
+    def _shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
 
-        return self._var.shape()[::-1]
+        return tuple(self._var.shape())[::-1]
 
     def _name(self) -> str:
         self._assert_not_closed()
 
         return self._var.name()  # type: ignore[no-any-return]
 
-    def _dtype(self) -> np.dtype:
+    def _dtype(self) -> np.dtype[Any]:
         self._assert_not_closed()
 
-        return adios2.type_adios_to_numpy(self._var.type())
+        return np.dtype(adios2.type_adios_to_numpy(self._var.type()))
 
-    def __getitem__(self, args: Any) -> NDArray:
+    def __getitem__(self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]) -> NDArray[Any]:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
@@ -100,7 +101,7 @@ class Variable:
         return arr
 
     def __repr__(self) -> str:
-        return f"adios2py.variable(name={self.name}, shape={self.shape}, dtype={self.dtype}"
+        return f"{self.__class__.__module__}.{self.__class__.__name__}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
 class FileState:
@@ -134,7 +135,7 @@ class File:
         logging.debug("adios2py: __enter__")
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback) -> None:
+    def __exit__(self, exception_type: type[BaseException] | None, exception: BaseException | None, traceback: TracebackType | None) -> None:
         logging.debug("adios2py: __exit__")
         self.close()
 
@@ -165,9 +166,4 @@ class File:
     def get_attribute(self, attribute_name: str) -> Any:
         assert FileState.is_open(self._state)
 
-        adios2_attr = self._state.io.inquire_attribute(attribute_name)
-        data = adios2_attr.data()
-        # FIXME use SingleValue when writing data to avoid doing this (?)
-        if len(data) == 1:
-            return data[0]
-        return data
+        return self._state.io.inquire_attribute(attribute_name).data()

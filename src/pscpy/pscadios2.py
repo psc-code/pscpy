@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import io
 import os
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable, Protocol, SupportsInt
 
+import numpy as np
 import xarray
 from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
@@ -35,7 +36,7 @@ class Lock(Protocol):
     def acquire(self, blocking: bool = True) -> bool: ...
     def release(self) -> None: ...
     def __enter__(self) -> None: ...
-    def __exit__(self, *args) -> None: ...
+    def __exit__(self, *args: Any) -> None: ...
     def locked(self) -> bool: ...
 
 
@@ -64,7 +65,7 @@ class PscAdios2Array(BackendArray):
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
 
-    def _getitem(self, args) -> NDArray:
+    def _getitem(self, args: tuple[SupportsInt | slice, ...]) -> NDArray[np.floating[Any]]:
         with self.datastore.lock:
             return self.get_array(needs_lock=False)[(*args, self._component)]  # FIXME add ... in between
 
@@ -83,7 +84,7 @@ class PscAdios2Store(AbstractDataStore):
     ) -> None:
         self._manager = manager
         self._mode = mode
-        self.lock: Lock = ensure_lock(lock)
+        self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
         self.psc = RunInfo(self.ds, length=length, corner=corner)
         self._species_names = species_names
 
@@ -100,7 +101,7 @@ class PscAdios2Store(AbstractDataStore):
             if mode == "r":
                 lock = ADIOS2_LOCK
             else:
-                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])
+                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
         manager = CachingFileManager(File, filename, mode=mode)
         return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
@@ -108,6 +109,7 @@ class PscAdios2Store(AbstractDataStore):
     def acquire(self, needs_lock: bool = True) -> File:
         with self._manager.acquire_context(needs_lock) as root:
             ds = root
+        assert isinstance(ds, File)
         return ds
 
     @property
@@ -115,7 +117,7 @@ class PscAdios2Store(AbstractDataStore):
         return self.acquire()
 
     @override
-    def get_variables(self) -> Frozen:
+    def get_variables(self) -> Frozen[str, xarray.DataArray]:
         field_to_component = get_field_to_component(self._species_names)
 
         variables: dict[str, tuple[str, int]] = {}
@@ -132,7 +134,7 @@ class PscAdios2Store(AbstractDataStore):
         return xarray.DataArray(data, dims=dims, coords=coords)
 
     @override
-    def get_attrs(self) -> Frozen:
+    def get_attrs(self) -> Frozen[str, Any]:
         return FrozenDict((name, self.ds.get_attribute(name)) for name in self.ds.attribute_names)
 
     @override
@@ -141,15 +143,15 @@ class PscAdios2Store(AbstractDataStore):
 
 
 def psc_open_dataset(
-    filename_or_obj,
-    species_names: list[str] | None = None,
+    filename_or_obj: Any,
+    species_names: Iterable[str],
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
-    filename_or_obj = _normalize_path(filename_or_obj)
-    store = PscAdios2Store.open(filename_or_obj, species_names, length=length, corner=corner)
+    filename = _normalize_path(filename_or_obj)  # type: ignore[no-untyped-call]
+    store = PscAdios2Store.open(filename, species_names, length=length, corner=corner)
 
-    data_vars, attrs = store.load()
+    data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
     return ds
@@ -158,6 +160,7 @@ def psc_open_dataset(
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     """Entrypoint that lets xarray recognize and read (PSC's) Adios2 output."""
 
+    open_dataset_parameters = ("filename_or_obj", "drop_variables")
     available = True
 
     @override
@@ -174,6 +177,9 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
 
+        if species_names is None:
+            raise ValueError(f"Missing required keyword argument: '{species_names=}'")
+
         return psc_open_dataset(
             filename_or_obj,
             species_names,
@@ -181,24 +187,16 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             corner=corner,
         )
 
-    open_dataset_parameters = ["filename_or_obj", "drop_variables"]
-
     @override
     def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
-        try:
+        if isinstance(filename_or_obj, (str, os.PathLike)):
             _, ext = os.path.splitext(filename_or_obj)
-        except TypeError:
-            return False
-        return ext in {".bp"}
+            return ext in {".bp"}
+        return False
 
     @override
-    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree:
+    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree[Any]:
         raise NotImplementedError()
 
 
-if xarray.__version__ == "2023.4.1":
-    # FIXME determine exactly when the API changed
-    BACKEND_ENTRYPOINTS["pscadios2"] = ("psc", PscAdios2BackendEntrypoint)
-else:
-    # API of version 0.19.0
-    BACKEND_ENTRYPOINTS["pscadios2"] = PscAdios2BackendEntrypoint
+BACKEND_ENTRYPOINTS["pscadios2"] = ("pscpy", PscAdios2BackendEntrypoint)
