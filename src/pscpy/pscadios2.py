@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import os
 import pathlib
 from typing import Any, Iterable, Protocol, SupportsInt
@@ -25,6 +24,7 @@ from xarray.backends.locks import (
 )
 from xarray.core import indexing
 from xarray.core.datatree import DataTree
+from xarray.core.types import ReadBuffer
 from xarray.core.utils import Frozen, FrozenDict
 
 from .adios2py import File, Variable
@@ -149,7 +149,7 @@ def psc_open_dataset(
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
-    filename = _normalize_path(filename_or_obj)  # type: ignore[no-untyped-call]
+    filename = _normalize_path(filename_or_obj)
     store = PscAdios2Store.open(filename, species_names, length=length, corner=corner)
 
     data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
@@ -167,13 +167,12 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     @override
     def open_dataset(
         self,
-        filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore,
+        filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore,
         *,
         drop_variables: str | Iterable[str] | None = None,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
         species_names: Iterable[str] | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
-        **kwargs: Any,
     ) -> xarray.Dataset:
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
@@ -190,14 +189,14 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         )
 
     @override
-    def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore) -> bool:
+    def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore) -> bool:
         if isinstance(filename_or_obj, (str, os.PathLike)):
             ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
         return False
 
     @override
-    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | io.BufferedIOBase | AbstractDataStore, **kwargs: Any) -> DataTree[Any]:
+    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore, **kwargs: Any) -> DataTree:
         raise NotImplementedError()
 
 
