@@ -173,7 +173,6 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
         species_names: Iterable[str] | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
-        **kwargs: Any,
     ) -> xarray.Dataset:
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
