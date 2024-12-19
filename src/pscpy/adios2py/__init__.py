@@ -54,7 +54,7 @@ class Variable:
     def _dtype(self) -> np.dtype[Any]:
         self._assert_not_closed()
 
-        return np.dtype(adios2.type_adios_to_numpy(self._var.type()))
+        return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
 
     def __getitem__(self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]) -> NDArray[Any]:
         self._assert_not_closed()
