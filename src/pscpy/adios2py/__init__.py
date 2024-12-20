@@ -13,6 +13,8 @@ from adios2.adios import Adios  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
+logger = logging.getLogger(__name__)
+
 _ad = Adios()
 
 
@@ -25,10 +27,10 @@ class Variable:
         self.name = self._name()
         self.shape = self._shape()
         self.dtype = self._dtype()
-        logging.debug("variable __init__ var %s engine %s", var, engine)
+        logger.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self) -> None:
-        logging.debug("adios2py.variable close")
+        logger.debug("adios2py.variable close")
         self._var = None
         self._engine = None
 
@@ -126,7 +128,7 @@ class File:
     _state: FileState | None
 
     def __init__(self, filename: str | os.PathLike[Any], mode: str = "r") -> None:
-        logging.debug("adios2py: __init__ %s", filename)
+        logger.debug("File.__init__(%s, %s)", filename, mode)
         assert mode == "r"
         self._state = FileState(filename)
         self._open_vars: dict[str, Variable] = {}
@@ -135,23 +137,22 @@ class File:
         self.attribute_names: Collection[str] = self._state.io.available_attributes().keys()
 
     def __enter__(self) -> File:
-        logging.debug("adios2py: __enter__")
+        logger.debug("File.__enter__()")
         return self
 
     def __exit__(self, exception_type: type[BaseException] | None, exception: BaseException | None, traceback: TracebackType | None) -> None:
-        logging.debug("adios2py: __exit__")
+        logger.debug("File.__exit__()")
         self.close()
 
     def __del__(self) -> None:
-        logging.debug("adios2py: __del__")
+        logger.debug("File.__del__()")
         if FileState.is_open(self._state):
             self.close()
 
     def close(self) -> None:
         assert FileState.is_open(self._state)
 
-        logging.debug("adios2py: close")
-        logging.debug("open vars %s", self._open_vars)
+        logger.debug("File.close(): open vars %s", self._open_vars)
         for var in self._open_vars.values():
             var.close()
 
