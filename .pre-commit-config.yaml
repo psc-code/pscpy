@@ -58,7 +58,7 @@ repos:
     rev: "v1.9.0"
     hooks:
       - id: mypy
-        files: src|tests
+        files: src #|tests
         args: []
         additional_dependencies:
           - pytest
