@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Collection
 from types import TracebackType
 from typing import Any, SupportsInt
@@ -109,10 +110,10 @@ class Variable:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str | os.PathLike[Any]) -> None:
         self.io_name = f"io-{filename}"
         self.io = _ad.declare_io(self.io_name)
-        self.engine = self.io.open(filename, adios2.bindings.Mode.Read)
+        self.engine = self.io.open(str(filename), adios2.bindings.Mode.Read)
 
     @staticmethod
     def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
@@ -124,7 +125,7 @@ class File:
 
     _state: FileState | None
 
-    def __init__(self, filename: str, mode: str = "r") -> None:
+    def __init__(self, filename: str | os.PathLike[Any], mode: str = "r") -> None:
         logging.debug("adios2py: __init__ %s", filename)
         assert mode == "r"
         self._state = FileState(filename)
