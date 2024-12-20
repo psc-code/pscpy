@@ -10,7 +10,6 @@ from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
 from xarray.backends import CachingFileManager
 from xarray.backends.common import (
-    BACKEND_ENTRYPOINTS,
     AbstractDataStore,
     BackendArray,
     BackendEntrypoint,
@@ -198,6 +197,3 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     @override
     def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore, **kwargs: Any) -> DataTree:
         raise NotImplementedError()
-
-
-BACKEND_ENTRYPOINTS["pscadios2"] = ("pscpy", PscAdios2BackendEntrypoint)
