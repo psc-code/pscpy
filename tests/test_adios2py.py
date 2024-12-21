@@ -11,6 +11,11 @@ def test_open_close():
     file.close()
 
 
+def test_open_twice():
+    file1 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
+    file2 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
+
+
 def test_with():
     with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp"):
         pass
