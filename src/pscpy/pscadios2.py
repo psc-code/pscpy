@@ -22,6 +22,7 @@ from xarray.backends.locks import (
     ensure_lock,
     get_write_lock,
 )
+from xarray.backends.store import StoreBackendEntrypoint
 from xarray.core import indexing
 from xarray.core.datatree import DataTree
 from xarray.core.types import ReadBuffer
@@ -116,15 +117,15 @@ class Adios2Store(AbstractDataStore):
         return self.acquire()
 
     @override
-    def get_variables(self) -> Frozen[str, xarray.DataArray]:
+    def get_variables(self) -> Frozen[str, xarray.Variable]:
         return FrozenDict(
             (k, self.open_store_variable(k)) for k in self.ds.variable_names
         )
 
-    def open_store_variable(self, var_name: str) -> xarray.DataArray:
+    def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
         dims = ("x", "y", "z", f"comp_{data.shape[3]}")
-        return xarray.DataArray(data, dims=dims)
+        return xarray.Variable(dims, data)
 
     @override
     def get_attrs(self) -> Frozen[str, Any]:
@@ -144,11 +145,17 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     available = True
 
     @override
-    def open_dataset(
+    def open_dataset(  # type: ignore[no-untyped-def]
         self,
         filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore,
         *,
+        mask_and_scale=True,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
         drop_variables: str | Iterable[str] | None = None,
+        use_cftime=None,
+        decode_timedelta=None,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
         species_names: Iterable[str]
@@ -160,9 +167,18 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
         store = Adios2Store.open(filename)
 
-        data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
-        ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
-        ds.set_close(store.close)
+        store_entrypoint = StoreBackendEntrypoint()
+
+        ds = store_entrypoint.open_dataset(
+            store,
+            mask_and_scale=mask_and_scale,
+            decode_times=decode_times,
+            concat_characters=concat_characters,
+            decode_coords=decode_coords,
+            drop_variables=drop_variables,
+            use_cftime=use_cftime,
+            decode_timedelta=decode_timedelta,
+        )
 
         if species_names is not None:
             field_to_component = psc.get_field_to_component(species_names)
