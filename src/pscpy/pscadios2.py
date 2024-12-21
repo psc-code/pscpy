@@ -27,8 +27,8 @@ from xarray.core.datatree import DataTree
 from xarray.core.types import ReadBuffer
 from xarray.core.utils import Frozen, FrozenDict
 
+from . import psc
 from .adios2py import File, Variable
-from .psc import RunInfo, get_field_to_component
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class PscAdios2Store(AbstractDataStore):
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
-        self.psc = RunInfo(self.ds, length=length, corner=corner)
+        self.psc = psc.RunInfo(self.ds, length=length, corner=corner)
         self._species_names = species_names
 
     @staticmethod
@@ -180,7 +180,7 @@ def psc_open_dataset(
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
 
-    field_to_component = get_field_to_component(species_names)
+    field_to_component = psc.get_field_to_component(species_names)
 
     data_vars = {}
     for var_name in ds:
