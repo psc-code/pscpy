@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Iterable, Protocol, SupportsInt
+from typing import Any, Iterable, Protocol
 
 import numpy as np
 import xarray
@@ -56,37 +56,24 @@ class PscAdios2Array(BackendArray):
         self,
         variable_name: str,
         datastore: PscAdios2Store,
-        orig_varname: str,
-        component: int | None,
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
-        self._orig_varname = orig_varname
-        self._component = component
         array = self.get_array()
-        self.shape = array.shape[:-1] if self._component is not None else array.shape
+        self.shape = array.shape
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
-        return self.datastore.acquire(needs_lock).get_variable(self._orig_varname)
+        return self.datastore.acquire(needs_lock).get_variable(self.variable_name)
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(
             key, self.shape, indexing.IndexingSupport.BASIC, self._getitem
         )
 
-    def _getitem(
-        self, args: tuple[SupportsInt | slice, ...]
-    ) -> NDArray[np.floating[Any]]:
+    def _getitem(self, key) -> NDArray[np.floating[Any]]:  # type: ignore [no-untyped-def]
         with self.datastore.lock:
-            if self._component is not None:
-                logger.debug("_get_item component [%s, comp]", args)
-                return self.get_array(needs_lock=False)[
-                    (*args, self._component)
-                ]  # FIXME add ... in between
-
-            logger.debug("_get_item component [%s]", args)
-            return self.get_array(needs_lock=False)[(*args,)]
+            return self.get_array(needs_lock=False)[key]
 
 
 class PscAdios2Store(AbstractDataStore):
@@ -134,9 +121,7 @@ class PscAdios2Store(AbstractDataStore):
         )
 
     def open_store_variable(self, var_name: str) -> xarray.DataArray:
-        data = indexing.LazilyIndexedArray(
-            PscAdios2Array(var_name, self, var_name, None)
-        )
+        data = indexing.LazilyIndexedArray(PscAdios2Array(var_name, self))
         dims = ("x", "y", "z", f"comp_{data.shape[3]}")
         return xarray.DataArray(data, dims=dims)
 
