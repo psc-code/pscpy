@@ -154,10 +154,10 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         species_names: Iterable[str]
         | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
     ) -> xarray.Dataset:
-        if not isinstance(filename_or_obj, (str, os.PathLike)):
+        filename = _normalize_path(filename_or_obj)
+        if not isinstance(filename, str):
             raise NotImplementedError()
 
-        filename = _normalize_path(filename_or_obj)
         store = Adios2Store.open(filename)
 
         data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
