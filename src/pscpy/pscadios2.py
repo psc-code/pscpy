@@ -50,7 +50,13 @@ class PscAdios2Array(BackendArray):
     This also takes care of slicing out the specific component of the data stored as 4-d array.
     """
 
-    def __init__(self, variable_name: str, datastore: PscAdios2Store, orig_varname: str, component: int) -> None:
+    def __init__(
+        self,
+        variable_name: str,
+        datastore: PscAdios2Store,
+        orig_varname: str,
+        component: int,
+    ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
         self._orig_varname = orig_varname
@@ -63,11 +69,17 @@ class PscAdios2Array(BackendArray):
         return self.datastore.acquire(needs_lock).get_variable(self._orig_varname)
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
-        return indexing.explicit_indexing_adapter(key, self.shape, indexing.IndexingSupport.BASIC, self._getitem)
+        return indexing.explicit_indexing_adapter(
+            key, self.shape, indexing.IndexingSupport.BASIC, self._getitem
+        )
 
-    def _getitem(self, args: tuple[SupportsInt | slice, ...]) -> NDArray[np.floating[Any]]:
+    def _getitem(
+        self, args: tuple[SupportsInt | slice, ...]
+    ) -> NDArray[np.floating[Any]]:
         with self.datastore.lock:
-            return self.get_array(needs_lock=False)[(*args, self._component)]  # FIXME add ... in between
+            return self.get_array(needs_lock=False)[
+                (*args, self._component)
+            ]  # FIXME add ... in between
 
 
 class PscAdios2Store(AbstractDataStore):
@@ -98,13 +110,15 @@ class PscAdios2Store(AbstractDataStore):
         corner: ArrayLike | None = None,
     ) -> PscAdios2Store:
         if lock is None:
-            if mode == "r":  # noqa: SIM108
+            if mode == "r":
                 lock = ADIOS2_LOCK
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
         manager = CachingFileManager(File, filename, mode=mode)
-        return PscAdios2Store(manager, species_names, mode=mode, lock=lock, length=length, corner=corner)
+        return PscAdios2Store(
+            manager, species_names, mode=mode, lock=lock, length=length, corner=corner
+        )
 
     def acquire(self, needs_lock: bool = True) -> File:
         with self._manager.acquire_context(needs_lock) as root:
@@ -125,17 +139,26 @@ class PscAdios2Store(AbstractDataStore):
             for field, component in field_to_component[orig_varname].items():
                 variables[field] = (orig_varname, component)
 
-        return FrozenDict((field, self.open_store_variable(field, *tup)) for field, tup in variables.items())
+        return FrozenDict(
+            (field, self.open_store_variable(field, *tup))
+            for field, tup in variables.items()
+        )
 
-    def open_store_variable(self, field: str, orig_varname: str, component: int) -> xarray.DataArray:
-        data = indexing.LazilyIndexedArray(PscAdios2Array(field, self, orig_varname, component))
+    def open_store_variable(
+        self, field: str, orig_varname: str, component: int
+    ) -> xarray.DataArray:
+        data = indexing.LazilyIndexedArray(
+            PscAdios2Array(field, self, orig_varname, component)
+        )
         dims = ["x", "y", "z"]
         coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
         return xarray.DataArray(data, dims=dims, coords=coords)
 
     @override
     def get_attrs(self) -> Frozen[str, Any]:
-        return FrozenDict((name, self.ds.get_attribute(name)) for name in self.ds.attribute_names)
+        return FrozenDict(
+            (name, self.ds.get_attribute(name)) for name in self.ds.attribute_names
+        )
 
     @override
     def get_dimensions(self) -> Never:
@@ -171,7 +194,8 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         drop_variables: str | Iterable[str] | None = None,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
-        species_names: Iterable[str] | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
+        species_names: Iterable[str]
+        | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
     ) -> xarray.Dataset:
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
@@ -188,12 +212,19 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         )
 
     @override
-    def guess_can_open(self, filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore) -> bool:
+    def guess_can_open(
+        self,
+        filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore,
+    ) -> bool:
         if isinstance(filename_or_obj, (str, os.PathLike)):
             ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
         return False
 
     @override
-    def open_datatree(self, filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore, **kwargs: Any) -> DataTree:
+    def open_datatree(
+        self,
+        filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore,
+        **kwargs: Any,
+    ) -> DataTree:
         raise NotImplementedError()

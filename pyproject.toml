@@ -95,10 +95,6 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
 
-[tool.ruff]
-src = ["src"]
-line-length = 200
-
 [tool.ruff.lint]
 extend-select = [
   "B",   # flake8-bugbear
