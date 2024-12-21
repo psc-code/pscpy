@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 from collections.abc import Collection
@@ -13,7 +14,7 @@ from adios2.adios import Adios  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
-_ad = Adios()
+logger = logging.getLogger(__name__)
 
 
 class Variable:
@@ -25,10 +26,10 @@ class Variable:
         self.name = self._name()
         self.shape = self._shape()
         self.dtype = self._dtype()
-        logging.debug("variable __init__ var %s engine %s", var, engine)
+        logger.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self) -> None:
-        logging.debug("adios2py.variable close")
+        logger.debug("adios2py.variable close")
         self._var = None
         self._engine = None
 
@@ -37,7 +38,9 @@ class Variable:
             error_message = "adios2py: variable is closed"
             raise ValueError(error_message)
 
-    def _set_selection(self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]) -> None:
+    def _set_selection(
+        self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]
+    ) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
@@ -57,7 +60,9 @@ class Variable:
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
 
-    def __getitem__(self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]) -> NDArray[Any]:
+    def __getitem__(
+        self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
+    ) -> NDArray[Any]:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
@@ -99,7 +104,9 @@ class Variable:
 
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(arr_shape, dtype=self.dtype, order="F")  # FIXME is column-major correct?
+        arr = np.empty(
+            arr_shape, dtype=self.dtype, order="F"
+        )  # FIXME is column-major correct?
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
@@ -110,10 +117,18 @@ class Variable:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
+    _ad = Adios()
+    _io_count = itertools.count()
+
     def __init__(self, filename: str | os.PathLike[Any]) -> None:
-        self.io_name = f"io-{filename}"
-        self.io = _ad.declare_io(self.io_name)
+        self.io_name = f"io-adios2py-{next(self._io_count)}"
+        logger.debug("io_name = %s", self.io_name)
+        self.io = self._ad.declare_io(self.io_name)
         self.engine = self.io.open(str(filename), adios2.bindings.Mode.Read)
+
+    def close(self) -> None:
+        self.engine.close()
+        self._ad.remove_io(self.io_name)
 
     @staticmethod
     def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
@@ -126,43 +141,52 @@ class File:
     _state: FileState | None
 
     def __init__(self, filename: str | os.PathLike[Any], mode: str = "r") -> None:
-        logging.debug("adios2py: __init__ %s", filename)
+        logger.debug("File.__init__(%s, %s)", filename, mode)
         assert mode == "r"
         self._state = FileState(filename)
         self._open_vars: dict[str, Variable] = {}
 
-        self.variable_names: Collection[str] = self._state.io.available_variables().keys()
-        self.attribute_names: Collection[str] = self._state.io.available_attributes().keys()
+        self.variable_names: Collection[str] = (
+            self._state.io.available_variables().keys()
+        )
+        self.attribute_names: Collection[str] = (
+            self._state.io.available_attributes().keys()
+        )
 
     def __enter__(self) -> File:
-        logging.debug("adios2py: __enter__")
+        logger.debug("File.__enter__()")
         return self
 
-    def __exit__(self, exception_type: type[BaseException] | None, exception: BaseException | None, traceback: TracebackType | None) -> None:
-        logging.debug("adios2py: __exit__")
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        logger.debug("File.__exit__()")
         self.close()
 
     def __del__(self) -> None:
-        logging.debug("adios2py: __del__")
+        logger.debug("File.__del__()")
         if FileState.is_open(self._state):
             self.close()
 
     def close(self) -> None:
         assert FileState.is_open(self._state)
 
-        logging.debug("adios2py: close")
-        logging.debug("open vars %s", self._open_vars)
+        logger.debug("File.close(): open vars %s", self._open_vars)
         for var in self._open_vars.values():
             var.close()
 
-        self._state.engine.close()
-        _ad.remove_io(self._state.io_name)
+        self._state.close()
         self._state = None
 
     def get_variable(self, variable_name: str) -> Variable:
         assert FileState.is_open(self._state)
 
-        var = Variable(self._state.io.inquire_variable(variable_name), self._state.engine)
+        var = Variable(
+            self._state.io.inquire_variable(variable_name), self._state.engine
+        )
         self._open_vars[variable_name] = var
         return var
 
