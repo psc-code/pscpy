@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 from collections.abc import Collection
@@ -118,8 +119,11 @@ class Variable:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
+    _io_count = itertools.count()
+
     def __init__(self, filename: str | os.PathLike[Any]) -> None:
-        self.io_name = f"io-{filename}"
+        self.io_name = f"io-adios2py-{next(self._io_count)}"
+        logger.debug("io_name = %s", self.io_name)
         self.io = _ad.declare_io(self.io_name)
         self.engine = self.io.open(str(filename), adios2.bindings.Mode.Read)
 
