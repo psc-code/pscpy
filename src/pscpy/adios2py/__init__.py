@@ -39,7 +39,9 @@ class Variable:
             error_message = "adios2py: variable is closed"
             raise ValueError(error_message)
 
-    def _set_selection(self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]) -> None:
+    def _set_selection(
+        self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]
+    ) -> None:
         self._assert_not_closed()
 
         self._var.set_selection((start[::-1], count[::-1]))
@@ -59,7 +61,9 @@ class Variable:
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
 
-    def __getitem__(self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]) -> NDArray[Any]:
+    def __getitem__(
+        self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
+    ) -> NDArray[Any]:
         self._assert_not_closed()
 
         if not isinstance(args, tuple):
@@ -101,7 +105,9 @@ class Variable:
 
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(arr_shape, dtype=self.dtype, order="F")  # FIXME is column-major correct?
+        arr = np.empty(
+            arr_shape, dtype=self.dtype, order="F"
+        )  # FIXME is column-major correct?
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
@@ -133,14 +139,23 @@ class File:
         self._state = FileState(filename)
         self._open_vars: dict[str, Variable] = {}
 
-        self.variable_names: Collection[str] = self._state.io.available_variables().keys()
-        self.attribute_names: Collection[str] = self._state.io.available_attributes().keys()
+        self.variable_names: Collection[str] = (
+            self._state.io.available_variables().keys()
+        )
+        self.attribute_names: Collection[str] = (
+            self._state.io.available_attributes().keys()
+        )
 
     def __enter__(self) -> File:
         logger.debug("File.__enter__()")
         return self
 
-    def __exit__(self, exception_type: type[BaseException] | None, exception: BaseException | None, traceback: TracebackType | None) -> None:
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         logger.debug("File.__exit__()")
         self.close()
 
@@ -163,7 +178,9 @@ class File:
     def get_variable(self, variable_name: str) -> Variable:
         assert FileState.is_open(self._state)
 
-        var = Variable(self._state.io.inquire_variable(variable_name), self._state.engine)
+        var = Variable(
+            self._state.io.inquire_variable(variable_name), self._state.engine
+        )
         self._open_vars[variable_name] = var
         return var
 

@@ -7,7 +7,12 @@ import pscpy
 
 
 def test_open_dataset():
-    ds = xr.open_dataset(pscpy.sample_dir / "pfd.000000400.bp", species_names=[], length=[1, 12.8, 51.2], corner=[0, -6.4, -25.6])
+    ds = xr.open_dataset(
+        pscpy.sample_dir / "pfd.000000400.bp",
+        species_names=[],
+        length=[1, 12.8, 51.2],
+        corner=[0, -6.4, -25.6],
+    )
     assert "jx_ec" in ds
     assert ds.coords.keys() == set({"x", "y", "z"})
     assert ds.jx_ec.shape == (1, 128, 512)
