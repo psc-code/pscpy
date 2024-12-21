@@ -46,8 +46,8 @@ class Lock(Protocol):
 ADIOS2_LOCK = SerializableLock()
 
 
-class PscAdios2Array(BackendArray):
-    """Lazy evaluation of a variable stored in PSC's adios2 field output.
+class Adios2Array(BackendArray):
+    """Lazy evaluation of a variable stored in an adios2 file.
 
     This also takes care of slicing out the specific component of the data stored as 4-d array.
     """
@@ -55,7 +55,7 @@ class PscAdios2Array(BackendArray):
     def __init__(
         self,
         variable_name: str,
-        datastore: PscAdios2Store,
+        datastore: Adios2Store,
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
@@ -76,7 +76,7 @@ class PscAdios2Array(BackendArray):
             return self.get_array(needs_lock=False)[key]
 
 
-class PscAdios2Store(AbstractDataStore):
+class Adios2Store(AbstractDataStore):
     """DataStore to facilitate loading an Adios2 file."""
 
     def __init__(
@@ -89,12 +89,13 @@ class PscAdios2Store(AbstractDataStore):
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
 
-    @staticmethod
+    @classmethod
     def open(
+        cls,
         filename: str,
         mode: str = "r",
         lock: Lock | None = None,
-    ) -> PscAdios2Store:
+    ) -> Adios2Store:
         if lock is None:
             if mode == "r":
                 lock = ADIOS2_LOCK
@@ -102,7 +103,7 @@ class PscAdios2Store(AbstractDataStore):
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
         manager = CachingFileManager(adios2py.File, filename, mode=mode)
-        return PscAdios2Store(manager, mode=mode, lock=lock)
+        return cls(manager, mode=mode, lock=lock)
 
     def acquire(self, needs_lock: bool = True) -> adios2py.File:
         with self._manager.acquire_context(needs_lock) as root:
@@ -121,7 +122,7 @@ class PscAdios2Store(AbstractDataStore):
         )
 
     def open_store_variable(self, var_name: str) -> xarray.DataArray:
-        data = indexing.LazilyIndexedArray(PscAdios2Array(var_name, self))
+        data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
         dims = ("x", "y", "z", f"comp_{data.shape[3]}")
         return xarray.DataArray(data, dims=dims)
 
@@ -143,7 +144,7 @@ def psc_open_dataset(
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
     filename = _normalize_path(filename_or_obj)
-    store = PscAdios2Store.open(filename)
+    store = Adios2Store.open(filename)
 
     data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
@@ -172,7 +173,7 @@ def psc_open_dataset(
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
-    """Entrypoint that lets xarray recognize and read (PSC's) Adios2 output."""
+    """Entrypoint that lets xarray recognize and read adios2 output."""
 
     open_dataset_parameters = ("filename_or_obj", "drop_variables")
     available = True
