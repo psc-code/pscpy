@@ -137,41 +137,6 @@ class Adios2Store(AbstractDataStore):
         raise NotImplementedError()
 
 
-def psc_open_dataset(
-    filename_or_obj: Any,
-    species_names: Iterable[str] | None = None,
-    length: ArrayLike | None = None,
-    corner: ArrayLike | None = None,
-) -> xarray.Dataset:
-    filename = _normalize_path(filename_or_obj)
-    store = Adios2Store.open(filename)
-
-    data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
-    ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
-    ds.set_close(store.close)
-
-    if species_names is not None:
-        field_to_component = psc.get_field_to_component(species_names)
-
-        data_vars = {}
-        for var_name in ds:
-            if var_name in field_to_component:
-                for field, component in field_to_component[var_name].items():  # type: ignore[index]
-                    data_vars[field] = ds[var_name][..., component]
-        ds = ds.assign(data_vars)
-
-    if length is not None:
-        run_info = psc.RunInfo(store.ds, length=length, corner=corner)
-        coords = {
-            "x": ("x", run_info.x),
-            "y": ("y", run_info.y),
-            "z": ("z", run_info.z),
-        }
-        ds = ds.assign_coords(coords)
-
-    return ds
-
-
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     """Entrypoint that lets xarray recognize and read adios2 output."""
 
@@ -192,12 +157,33 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
 
-        return psc_open_dataset(
-            filename_or_obj,
-            species_names=species_names,
-            length=length,
-            corner=corner,
-        )
+        filename = _normalize_path(filename_or_obj)
+        store = Adios2Store.open(filename)
+
+        data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
+        ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
+        ds.set_close(store.close)
+
+        if species_names is not None:
+            field_to_component = psc.get_field_to_component(species_names)
+
+            data_vars = {}
+            for var_name in ds:
+                if var_name in field_to_component:
+                    for field, component in field_to_component[var_name].items():  # type: ignore[index]
+                        data_vars[field] = ds[var_name][..., component]
+            ds = ds.assign(data_vars)
+
+        if length is not None:
+            run_info = psc.RunInfo(store.ds, length=length, corner=corner)
+            coords = {
+                "x": ("x", run_info.x),
+                "y": ("y", run_info.y),
+                "z": ("z", run_info.z),
+            }
+            ds = ds.assign_coords(coords)
+
+        return ds
 
     @override
     def guess_can_open(
