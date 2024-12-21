@@ -95,26 +95,18 @@ class PscAdios2Store(AbstractDataStore):
     def __init__(
         self,
         manager: CachingFileManager,
-        species_names: Iterable[str],
         mode: str | None = None,
         lock: Lock = ADIOS2_LOCK,
-        length: ArrayLike | None = None,
-        corner: ArrayLike | None = None,
     ) -> None:
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
-        self.psc = psc.RunInfo(self.ds, length=length, corner=corner)
-        self._species_names = species_names
 
     @staticmethod
     def open(
         filename: str,
-        species_names: Iterable[str],
         mode: str = "r",
         lock: Lock | None = None,
-        length: ArrayLike | None = None,
-        corner: ArrayLike | None = None,
     ) -> PscAdios2Store:
         if lock is None:
             if mode == "r":
@@ -123,9 +115,7 @@ class PscAdios2Store(AbstractDataStore):
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
         manager = CachingFileManager(adios2py.File, filename, mode=mode)
-        return PscAdios2Store(
-            manager, species_names, mode=mode, lock=lock, length=length, corner=corner
-        )
+        return PscAdios2Store(manager, mode=mode, lock=lock)
 
     def acquire(self, needs_lock: bool = True) -> adios2py.File:
         with self._manager.acquire_context(needs_lock) as root:
@@ -163,12 +153,12 @@ class PscAdios2Store(AbstractDataStore):
 
 def psc_open_dataset(
     filename_or_obj: Any,
-    species_names: Iterable[str],
+    species_names: Iterable[str] | None = None,
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
     filename = _normalize_path(filename_or_obj)
-    store = PscAdios2Store.open(filename, species_names, length=length, corner=corner)
+    store = PscAdios2Store.open(filename)
 
     data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
@@ -216,13 +206,9 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         if not isinstance(filename_or_obj, (str, os.PathLike)):
             raise NotImplementedError()
 
-        if species_names is None:
-            error_message = f"Missing required keyword argument: '{species_names=}'"
-            raise ValueError(error_message)
-
         return psc_open_dataset(
             filename_or_obj,
-            species_names,
+            species_names=species_names,
             length=length,
             corner=corner,
         )
