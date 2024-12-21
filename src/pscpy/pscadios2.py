@@ -140,29 +140,15 @@ class PscAdios2Store(AbstractDataStore):
 
     @override
     def get_variables(self) -> Frozen[str, xarray.DataArray]:
-        field_to_component = get_field_to_component(self._species_names)
-
-        variables: dict[str, tuple[str, int | None]] = {}
-        for orig_varname in self.ds.variable_names:
-            variables[orig_varname] = (orig_varname, None)
-            for field, component in field_to_component[orig_varname].items():
-                variables[field] = (orig_varname, component)
-
         return FrozenDict(
-            (field, self.open_store_variable(field, *tup))
-            for field, tup in variables.items()
+            (k, self.open_store_variable(k)) for k in self.ds.variable_names
         )
 
-    def open_store_variable(
-        self, field: str, orig_varname: str, component: int | None
-    ) -> xarray.DataArray:
+    def open_store_variable(self, var_name: str) -> xarray.DataArray:
         data = indexing.LazilyIndexedArray(
-            PscAdios2Array(field, self, orig_varname, component)
+            PscAdios2Array(var_name, self, var_name, None)
         )
-        if component is None:
-            dims: tuple[str, ...] = ("x", "y", "z", f"comp_{data.shape[3]}")
-        else:
-            dims = ("x", "y", "z")
+        dims: tuple[str, ...] = ("x", "y", "z", f"comp_{data.shape[3]}")
         coords = {
             "x": ("x", self.psc.x),
             "y": ("y", self.psc.y),
@@ -193,7 +179,17 @@ def psc_open_dataset(
     data_vars, attrs = store.load()  # type: ignore[no-untyped-call]
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
-    return ds
+
+    field_to_component = get_field_to_component(species_names)
+
+    data_vars = {}
+    for var_name in ds:
+        if var_name not in field_to_component:
+            continue
+        for field, component in field_to_component[var_name].items():  # type: ignore[index]
+            data_vars[field] = ds[var_name][..., component]
+
+    return ds.assign(data_vars)
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
