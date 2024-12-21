@@ -147,13 +147,8 @@ class PscAdios2Store(AbstractDataStore):
         data = indexing.LazilyIndexedArray(
             PscAdios2Array(var_name, self, var_name, None)
         )
-        dims: tuple[str, ...] = ("x", "y", "z", f"comp_{data.shape[3]}")
-        coords = {
-            "x": ("x", self.psc.x),
-            "y": ("y", self.psc.y),
-            "z": ("z", self.psc.z),
-        }
-        return xarray.DataArray(data, dims=dims, coords=coords)
+        dims = ("x", "y", "z", f"comp_{data.shape[3]}")
+        return xarray.DataArray(data, dims=dims)
 
     @override
     def get_attrs(self) -> Frozen[str, Any]:
@@ -179,16 +174,26 @@ def psc_open_dataset(
     ds = xarray.Dataset(data_vars=data_vars, attrs=attrs)
     ds.set_close(store.close)
 
-    field_to_component = psc.get_field_to_component(species_names)
+    if species_names is not None:
+        field_to_component = psc.get_field_to_component(species_names)
 
-    data_vars = {}
-    for var_name in ds:
-        if var_name not in field_to_component:
-            continue
-        for field, component in field_to_component[var_name].items():  # type: ignore[index]
-            data_vars[field] = ds[var_name][..., component]
+        data_vars = {}
+        for var_name in ds:
+            if var_name in field_to_component:
+                for field, component in field_to_component[var_name].items():  # type: ignore[index]
+                    data_vars[field] = ds[var_name][..., component]
+        ds = ds.assign(data_vars)
 
-    return ds.assign(data_vars)
+    if length is not None:
+        run_info = psc.RunInfo(store.ds, length=length, corner=corner)
+        coords = {
+            "x": ("x", run_info.x),
+            "y": ("y", run_info.y),
+            "z": ("z", run_info.z),
+        }
+        ds = ds.assign_coords(coords)
+
+    return ds
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
