@@ -27,8 +27,7 @@ from xarray.core.datatree import DataTree
 from xarray.core.types import ReadBuffer
 from xarray.core.utils import Frozen, FrozenDict
 
-from . import psc
-from .adios2py import File, Variable
+from . import adios2py, psc
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,7 @@ class PscAdios2Array(BackendArray):
         self.shape = array.shape[:-1] if self._component is not None else array.shape
         self.dtype = array.dtype
 
-    def get_array(self, needs_lock: bool = True) -> Variable:
+    def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
         return self.datastore.acquire(needs_lock).get_variable(self._orig_varname)
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
@@ -123,19 +122,19 @@ class PscAdios2Store(AbstractDataStore):
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
-        manager = CachingFileManager(File, filename, mode=mode)
+        manager = CachingFileManager(adios2py.File, filename, mode=mode)
         return PscAdios2Store(
             manager, species_names, mode=mode, lock=lock, length=length, corner=corner
         )
 
-    def acquire(self, needs_lock: bool = True) -> File:
+    def acquire(self, needs_lock: bool = True) -> adios2py.File:
         with self._manager.acquire_context(needs_lock) as root:
             ds = root
-        assert isinstance(ds, File)
+        assert isinstance(ds, adios2py.File)
         return ds
 
     @property
-    def ds(self) -> File:
+    def ds(self) -> adios2py.File:
         return self.acquire()
 
     @override
