@@ -55,14 +55,14 @@ class PscAdios2Array(BackendArray):
         variable_name: str,
         datastore: PscAdios2Store,
         orig_varname: str,
-        component: int,
+        component: int | None,
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
         self._orig_varname = orig_varname
         self._component = component
         array = self.get_array()
-        self.shape = array.shape[:-1]
+        self.shape = array.shape[:-1] if self._component is not None else array.shape
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> Variable:
@@ -77,9 +77,12 @@ class PscAdios2Array(BackendArray):
         self, args: tuple[SupportsInt | slice, ...]
     ) -> NDArray[np.floating[Any]]:
         with self.datastore.lock:
-            return self.get_array(needs_lock=False)[
-                (*args, self._component)
-            ]  # FIXME add ... in between
+            if self._component is not None:
+                return self.get_array(needs_lock=False)[
+                    (*args, self._component)
+                ]  # FIXME add ... in between
+
+            return self.get_array(needs_lock=False)[(*args,)]
 
 
 class PscAdios2Store(AbstractDataStore):
@@ -134,8 +137,9 @@ class PscAdios2Store(AbstractDataStore):
     def get_variables(self) -> Frozen[str, xarray.DataArray]:
         field_to_component = get_field_to_component(self._species_names)
 
-        variables: dict[str, tuple[str, int]] = {}
+        variables: dict[str, tuple[str, int | None]] = {}
         for orig_varname in self.ds.variable_names:
+            variables[orig_varname] = (orig_varname, None)
             for field, component in field_to_component[orig_varname].items():
                 variables[field] = (orig_varname, component)
 
@@ -145,13 +149,20 @@ class PscAdios2Store(AbstractDataStore):
         )
 
     def open_store_variable(
-        self, field: str, orig_varname: str, component: int
+        self, field: str, orig_varname: str, component: int | None
     ) -> xarray.DataArray:
         data = indexing.LazilyIndexedArray(
             PscAdios2Array(field, self, orig_varname, component)
         )
-        dims = ["x", "y", "z"]
-        coords = {"x": self.psc.x, "y": self.psc.y, "z": self.psc.z}
+        if component is None:
+            dims: tuple[str, ...] = ("x", "y", "z", f"comp_{data.shape[3]}")
+        else:
+            dims = ("x", "y", "z")
+        coords = {
+            "x": ("x", self.psc.x),
+            "y": ("y", self.psc.y),
+            "z": ("z", self.psc.z),
+        }
         return xarray.DataArray(data, dims=dims, coords=coords)
 
     @override
