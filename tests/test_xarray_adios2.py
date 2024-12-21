@@ -40,3 +40,15 @@ def test_partial_selection():
     assert ds.jeh.shape == (1, 128, 512, 9)
     assert np.all(ds.jeh[:, :10, ..., 0] == ds.jx_ec[:, :10, :])
     assert np.all(ds.jeh[:, :10, ..., 0] == ds.jx_ec[:, :10])
+
+
+def test_computed():
+    ds = _open_dataset()
+    ds = ds.assign(jx=ds.jeh.isel(comp_9=0))
+    assert np.all(ds.jx == ds.jx_ec)
+
+
+def test_computed_via_lambda():
+    ds = _open_dataset()
+    ds = ds.assign(jx=lambda ds: ds.jeh.isel(comp_9=0))
+    assert np.all(ds.jx == ds.jx_ec)
