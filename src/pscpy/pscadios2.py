@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 from typing import Any, Iterable, Protocol, SupportsInt
@@ -28,6 +29,8 @@ from xarray.core.utils import Frozen, FrozenDict
 
 from .adios2py import File, Variable
 from .psc import RunInfo, get_field_to_component
+
+logger = logging.getLogger(__name__)
 
 
 class Lock(Protocol):
@@ -78,10 +81,12 @@ class PscAdios2Array(BackendArray):
     ) -> NDArray[np.floating[Any]]:
         with self.datastore.lock:
             if self._component is not None:
+                logger.debug("_get_item component [%s, comp]", args)
                 return self.get_array(needs_lock=False)[
                     (*args, self._component)
                 ]  # FIXME add ... in between
 
+            logger.debug("_get_item component [%s]", args)
             return self.get_array(needs_lock=False)[(*args,)]
 
 

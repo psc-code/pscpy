@@ -102,6 +102,12 @@ class Variable:
             sel_count[d] = shape[d]
             arr_shape.append(sel_count[d])
 
+        logger.debug(
+            "arr_shape = %s, sel_start = %s, sel_count = %s",
+            arr_shape,
+            sel_start,
+            sel_count,
+        )
         self._set_selection(sel_start, sel_count)
 
         arr = np.empty(
