@@ -16,8 +16,6 @@ from typing_extensions import TypeGuard
 
 logger = logging.getLogger(__name__)
 
-_ad = Adios()
-
 
 class Variable:
     """Wrapper for an `adios2.Variable` object to facilitate loading and indexing into it."""
@@ -119,13 +117,18 @@ class Variable:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
+    _ad = Adios()
     _io_count = itertools.count()
 
     def __init__(self, filename: str | os.PathLike[Any]) -> None:
         self.io_name = f"io-adios2py-{next(self._io_count)}"
         logger.debug("io_name = %s", self.io_name)
-        self.io = _ad.declare_io(self.io_name)
+        self.io = self._ad.declare_io(self.io_name)
         self.engine = self.io.open(str(filename), adios2.bindings.Mode.Read)
+
+    def close(self) -> None:
+        self.engine.close()
+        self._ad.remove_io(self.io_name)
 
     @staticmethod
     def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
@@ -175,8 +178,7 @@ class File:
         for var in self._open_vars.values():
             var.close()
 
-        self._state.engine.close()
-        _ad.remove_io(self._state.io_name)
+        self._state.close()
         self._state = None
 
     def get_variable(self, variable_name: str) -> Variable:
