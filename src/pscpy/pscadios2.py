@@ -9,7 +9,7 @@ import numpy as np
 import xarray
 from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
-from xarray.backends import CachingFileManager
+from xarray.backends import CachingFileManager, DummyFileManager, FileManager
 from xarray.backends.common import (
     AbstractDataStore,
     BackendArray,
@@ -82,7 +82,7 @@ class Adios2Store(AbstractDataStore):
 
     def __init__(
         self,
-        manager: CachingFileManager,
+        manager: FileManager,
         mode: str | None = None,
         lock: Lock = ADIOS2_LOCK,
     ) -> None:
@@ -107,8 +107,23 @@ class Adios2Store(AbstractDataStore):
         manager = CachingFileManager(adios2py.File, filename, mode=mode)
         return cls(manager, mode=mode, lock=lock)
 
+    @classmethod
+    def open_existing(
+        cls,
+        io_engine: tuple[Any, Any],
+        mode: str = "r",
+        lock: Lock | None = None,
+    ) -> Adios2Store:
+        assert mode == "r"
+        if lock is None:
+            lock = ADIOS2_LOCK
+
+        file = adios2py.File(io_engine, mode=mode)
+        manager = DummyFileManager(file)  # type: ignore[no-untyped-call]
+        return cls(manager, mode=mode, lock=lock)
+
     def acquire(self, needs_lock: bool = True) -> adios2py.File:
-        with self._manager.acquire_context(needs_lock) as root:
+        with self._manager.acquire_context(needs_lock) as root:  # type: ignore[no-untyped-call]
             ds = root
         assert isinstance(ds, adios2py.File)
         return ds
@@ -179,11 +194,14 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         species_names: Iterable[str]
         | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
     ) -> xarray.Dataset:
-        filename = _normalize_path(filename_or_obj)
-        if not isinstance(filename, str):
-            raise NotImplementedError()
+        if isinstance(filename_or_obj, Adios2Store):
+            store = filename_or_obj
+        else:
+            filename = _normalize_path(filename_or_obj)
+            if not isinstance(filename, str):
+                raise NotImplementedError()
 
-        store = Adios2Store.open(filename)
+            store = Adios2Store.open(filename)
 
         store_entrypoint = StoreBackendEntrypoint()
 
@@ -229,7 +247,8 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         if isinstance(filename_or_obj, (str, os.PathLike)):
             ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
-        return False
+
+        return isinstance(filename_or_obj, tuple) and len(filename_or_obj) == 2
 
     @override
     def open_datatree(
