@@ -68,9 +68,13 @@ def test_pfd_moments():
 #     ds = xr.open_dataset(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
 #     )
+#     assert ds.sizes == dict(lats=181, longs=61)
+#     assert np.isclose(ds.dacttime, 1.4897556e09)
 
 
 # def test_open_from_existing():
+#     import adios2
+#
 #     ad = adios2.Adios()
 #     io = ad.declare_io("io_name")
 #     engine = io.open(

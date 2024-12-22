@@ -59,6 +59,16 @@ def test_get_attribute():
         assert file.get_attribute("step") == 400
 
 
+# def test_single_value():
+#     with adios2py.File(
+#         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
+#     ) as file:
+#         assert "dacttime" in file.variable_names
+#         var = file.get_variable("dacttime")
+#         val = var[()]
+#         assert np.isclose(val, 1.4897556e09)
+
+
 def test_construct_from_engine_io():
     ad = adios2.Adios()
     io = ad.declare_io("io_name")

@@ -125,7 +125,8 @@ class Variable:
             sel_start,
             sel_count,
         )
-        self._set_selection(sel_start, sel_count)
+        if len(sel_start) > 0:
+            self._set_selection(sel_start, sel_count)
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
