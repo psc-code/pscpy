@@ -139,7 +139,7 @@ class Adios2Store(AbstractDataStore):
             if var.is_reverse_dims:
                 dims = dims[::-1]
         elif data.ndim == 4:  # for psc compatibility
-            dims = ("x", "y", "z", f"comp_{data.shape[3]}")
+            dims = ("x", "y", "z", f"comp_{var_name}")
         else:  # if we have no info, not much we can do...
             dims = tuple(f"len_{dim}" for dim in data.shape)
         return xarray.Variable(dims, data, attrs)
