@@ -9,9 +9,7 @@ from types import TracebackType
 from typing import Any, SupportsInt
 
 import adios2  # type: ignore[import-untyped]
-import adios2.stream  # type: ignore[import-untyped]
 import numpy as np
-from adios2.adios import Adios  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from typing_extensions import TypeGuard
 
@@ -141,7 +139,7 @@ class Variable:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
-    _ad = Adios()
+    _ad = adios2.Adios()
     _io_count = itertools.count()
 
     def __init__(self, filename: str | os.PathLike[Any]) -> None:
