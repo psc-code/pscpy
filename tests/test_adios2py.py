@@ -35,6 +35,21 @@ def test_get_variable():
         assert var.dtype == np.float32
 
 
+def test_is_reverse_dims():
+    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
+        var = file.get_variable("jeh")
+        assert var.name == "jeh"
+        assert var.shape == (1, 128, 512, 9)
+        assert var.dtype == np.float32
+        assert not var.is_reverse_dims
+
+    # with adios2py.File(
+    #     "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
+    # ) as file:
+    #     var = file.get_variable("pot")
+    #     assert var.is_reverse_dims
+
+
 def test_get_attribute():
     with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
         assert all(file.get_attribute("ib") == (0, 0, 0))

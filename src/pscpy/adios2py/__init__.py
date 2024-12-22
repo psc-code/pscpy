@@ -26,6 +26,7 @@ class Variable:
         self.name = self._name()
         self.shape = self._shape()
         self.dtype = self._dtype()
+        self.is_reverse_dims = self._is_reverse_dims()
         logger.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self) -> None:
@@ -59,6 +60,10 @@ class Variable:
         self._assert_not_closed()
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
+
+    def _is_reverse_dims(self) -> bool:
+        infos = self._engine.blocks_info(self.name, 0)
+        return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
     def __getitem__(
         self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
