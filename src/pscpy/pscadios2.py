@@ -125,7 +125,6 @@ class Adios2Store(AbstractDataStore):
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
-        dims = ("x", "y", "z", f"comp_{data.shape[3]}")
         attr_names = [
             name for name in self.ds.attribute_names if name.startswith(f"{var_name}::")
         ]
@@ -134,6 +133,12 @@ class Adios2Store(AbstractDataStore):
             name.removeprefix(f"{var_name}::"): self.ds.get_attribute(name)  # type: ignore[attr-defined]
             for name in attr_names
         }
+        if "xr-dims" in attrs:
+            dims: tuple[str, ...] = attrs["xr-dims"].split(";")
+        elif data.ndim == 4:  # for psc compatibility
+            dims = ("x", "y", "z", f"comp_{data.shape[3]}")
+        else:  # if we have no info, not much we can do...
+            dims = tuple(f"len_{dim}" for dim in data.shape)
         return xarray.Variable(dims, data, attrs)
 
     @override
