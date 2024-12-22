@@ -150,9 +150,6 @@ class Adios2Store(AbstractDataStore):
         }
         if "xr-dims" in attrs:
             dims: tuple[str, ...] = attrs["xr-dims"].split(";")
-            var = self.ds.get_variable(var_name)
-            if var.is_reverse_dims:
-                dims = dims[::-1]
         elif data.ndim == 4:  # for psc compatibility
             dims = ("x", "y", "z", f"comp_{var_name}")
         else:  # if we have no info, not much we can do...
