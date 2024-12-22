@@ -166,7 +166,9 @@ class File:
         logger.debug("File.__init__(%s, %s)", filename, mode)
         assert mode == "r"
         self._state = FileState(filename)
-        self._filename = filename
+        self._reverse_dims = (
+            True if pathlib.Path(filename).name.startswith(("pfd", "tfd")) else None
+        )
         self._open_vars: dict[str, Variable] = {}
 
         self.variable_names: Collection[str] = (
@@ -208,15 +210,10 @@ class File:
         assert FileState.is_open(self._state)
 
         if variable_name not in self._open_vars:
-            reverse_dims = None
-            filename = pathlib.Path(self._filename).name
-            if filename.startswith(("pfd", "tfd")):
-                reverse_dims = True
-
             var = Variable(
                 self._state.io.inquire_variable(variable_name),
                 self._state.engine,
-                reverse_dims,
+                self._reverse_dims,
             )
             self._open_vars[variable_name] = var
             return var
