@@ -89,6 +89,7 @@ class Adios2Store(AbstractDataStore):
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
+        self._var_attrs: set[str] = set()
 
     @classmethod
     def open(
@@ -125,12 +126,21 @@ class Adios2Store(AbstractDataStore):
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
         dims = ("x", "y", "z", f"comp_{data.shape[3]}")
-        return xarray.Variable(dims, data)
+        attr_names = [
+            name for name in self.ds.attribute_names if name.startswith(f"{var_name}::")
+        ]
+        self._var_attrs |= set(attr_names)
+        attrs = {
+            name.removeprefix(f"{var_name}::"): self.ds.get_attribute(name)  # type: ignore[attr-defined]
+            for name in attr_names
+        }
+        return xarray.Variable(dims, data, attrs)
 
     @override
     def get_attrs(self) -> Frozen[str, Any]:
+        attrs_remaining = set(self.ds.attribute_names) - self._var_attrs
         return FrozenDict(
-            (name, self.ds.get_attribute(name)) for name in self.ds.attribute_names
+            (name, self.ds.get_attribute(name)) for name in attrs_remaining
         )
 
     @override
