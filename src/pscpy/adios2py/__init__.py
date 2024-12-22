@@ -24,9 +24,10 @@ class Variable:
         self._var = var
         self._engine = engine
         self.name = self._name()
+        self.is_reverse_dims = self._is_reverse_dims()
+        self._reverse_dims = True
         self.shape = self._shape()
         self.dtype = self._dtype()
-        self.is_reverse_dims = self._is_reverse_dims()
         logger.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self) -> None:
@@ -39,17 +40,22 @@ class Variable:
             error_message = "adios2py: variable is closed"
             raise ValueError(error_message)
 
+    def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
+        return dims[::-1] if self._reverse_dims else dims
+
     def _set_selection(
         self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]
     ) -> None:
         self._assert_not_closed()
 
-        self._var.set_selection((start[::-1], count[::-1]))
+        self._var.set_selection(
+            (self._maybe_reverse(start), self._maybe_reverse(count))
+        )
 
     def _shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
 
-        return tuple(self._var.shape())[::-1]
+        return self._maybe_reverse(tuple(self._var.shape()))
 
     def _name(self) -> str:
         self._assert_not_closed()
@@ -115,9 +121,8 @@ class Variable:
         )
         self._set_selection(sel_start, sel_count)
 
-        arr = np.empty(
-            arr_shape, dtype=self.dtype, order="F"
-        )  # FIXME is column-major correct?
+        order = "F" if self._reverse_dims else "C"
+        arr = np.empty(arr_shape, dtype=self.dtype, order=order)
         self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
