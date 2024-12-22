@@ -190,11 +190,14 @@ class File:
     def get_variable(self, variable_name: str) -> Variable:
         assert FileState.is_open(self._state)
 
-        var = Variable(
-            self._state.io.inquire_variable(variable_name), self._state.engine
-        )
-        self._open_vars[variable_name] = var
-        return var
+        if variable_name not in self._open_vars:
+            var = Variable(
+                self._state.io.inquire_variable(variable_name), self._state.engine
+            )
+            self._open_vars[variable_name] = var
+            return var
+
+        return self._open_vars[variable_name]
 
     def get_attribute(self, attribute_name: str) -> Any:
         assert FileState.is_open(self._state)
