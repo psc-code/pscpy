@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import logging
 import os
+import pathlib
 from collections.abc import Collection
 from types import TracebackType
 from typing import Any, SupportsInt
@@ -20,12 +21,19 @@ logger = logging.getLogger(__name__)
 class Variable:
     """Wrapper for an `adios2.Variable` object to facilitate loading and indexing into it."""
 
-    def __init__(self, var: adios2.Variable, engine: adios2.Engine) -> None:
+    def __init__(
+        self,
+        var: adios2.Variable,
+        engine: adios2.Engine,
+        reverse_dims: bool | None = None,
+    ) -> None:
         self._var = var
         self._engine = engine
         self.name = self._name()
         self.is_reverse_dims = self._is_reverse_dims()
-        self._reverse_dims = True
+        self._reverse_dims = self.is_reverse_dims
+        if reverse_dims is not None:
+            self._reverse_dims = reverse_dims
         self.shape = self._shape()
         self.dtype = self._dtype()
         logger.debug("variable __init__ var %s engine %s", var, engine)
@@ -68,7 +76,7 @@ class Variable:
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
-        infos = self._engine.blocks_info(self.name, 0)
+        infos = self._engine.blocks_info(self.name, self._engine.current_step())
         return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
     def __getitem__(
@@ -160,6 +168,7 @@ class File:
         logger.debug("File.__init__(%s, %s)", filename, mode)
         assert mode == "r"
         self._state = FileState(filename)
+        self._filename = filename
         self._open_vars: dict[str, Variable] = {}
 
         self.variable_names: Collection[str] = (
@@ -201,8 +210,15 @@ class File:
         assert FileState.is_open(self._state)
 
         if variable_name not in self._open_vars:
+            reverse_dims = None
+            filename = pathlib.Path(self._filename).name
+            if filename.startswith(("pfd", "tfd")):
+                reverse_dims = True
+
             var = Variable(
-                self._state.io.inquire_variable(variable_name), self._state.engine
+                self._state.io.inquire_variable(variable_name),
+                self._state.engine,
+                reverse_dims,
             )
             self._open_vars[variable_name] = var
             return var
