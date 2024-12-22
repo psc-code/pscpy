@@ -199,4 +199,8 @@ class File:
     def get_attribute(self, attribute_name: str) -> Any:
         assert FileState.is_open(self._state)
 
-        return self._state.io.inquire_attribute(attribute_name).data()
+        attr = self._state.io.inquire_attribute(attribute_name)
+        if attr.type() == "string":
+            return attr.data_string()
+
+        return attr.data()
