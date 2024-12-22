@@ -22,27 +22,23 @@ def test_open_dataset():
     ds = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     assert "jx_ec" in ds
     assert ds.coords.keys() == set({"x", "y", "z"})
-    assert ds.jx_ec.shape == (1, 128, 512)
+    assert ds.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
     assert np.allclose(ds.jx_ec.z, np.linspace(-25.6, 25.6, 512, endpoint=False))
 
 
 def test_component():
     ds = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
-    assert ds.jeh.shape == (1, 128, 512, 9)
-    assert np.all(ds.jeh[..., 0] == ds.jx_ec)
+    assert ds.jeh.sizes == dict(x=1, y=128, z=512, comp_jeh=9)  # noqa: C408
+    assert np.all(ds.jeh.isel(comp_jeh=0) == ds.jx_ec)
 
 
 def test_selection():
     ds = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
-    assert ds.jeh.shape == (1, 128, 512, 9)
-    assert np.all(ds.jeh[:, :10, :40, 0] == ds.jx_ec[:, :10, :40])
-
-
-def test_partial_selection():
-    ds = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
-    assert ds.jeh.shape == (1, 128, 512, 9)
-    assert np.all(ds.jeh[:, :10, ..., 0] == ds.jx_ec[:, :10, :])
-    assert np.all(ds.jeh[:, :10, ..., 0] == ds.jx_ec[:, :10])
+    assert ds.jeh.sizes == dict(x=1, y=128, z=512, comp_jeh=9)  # noqa: C408
+    assert np.all(
+        ds.jeh.isel(comp_jeh=0, y=slice(0, 10), z=slice(0, 40))
+        == ds.jx_ec.isel(y=slice(0, 10), z=slice(0, 40))
+    )
 
 
 def test_computed():
@@ -60,6 +56,12 @@ def test_computed_via_lambda():
 def test_pfd_moments():
     ds = _open_dataset(pscpy.sample_dir / "pfd_moments.000000400.bp")
     assert "all_1st" in ds
-    assert ds.all_1st.shape == (1, 128, 512, 26)
+    assert ds.all_1st.sizes == dict(x=1, y=128, z=512, comp_all_1st=26)  # noqa: C408
     assert "rho_i" in ds
-    assert np.all(ds.rho_i == ds.all_1st[..., 13])
+    assert np.all(ds.rho_i == ds.all_1st.isel(comp_all_1st=13))
+
+
+# def test_ggcm_i2c():
+#     ds = xr.open_dataset(
+#         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
+#     )
