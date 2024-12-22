@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import adios2
 import numpy as np
 
 import pscpy
@@ -56,3 +57,17 @@ def test_get_attribute():
         assert all(file.get_attribute("im") == (1, 128, 128))
         assert np.isclose(file.get_attribute("time"), 109.38)
         assert file.get_attribute("step") == 400
+
+
+def test_construct_from_engine_io():
+    ad = adios2.Adios()
+    io = ad.declare_io("io_name")
+    engine = io.open(
+        str(pscpy.sample_dir / "pfd.000000400.bp"), adios2.bindings.Mode.Read
+    )
+    with adios2py.File((io, engine)) as file:
+        assert all(file.get_attribute("ib") == (0, 0, 0))
+        assert all(file.get_attribute("im") == (1, 128, 128))
+
+    engine.close()
+    ad.remove_io("io_name")
