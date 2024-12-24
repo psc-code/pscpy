@@ -6,7 +6,7 @@ import os
 import pathlib
 from collections.abc import Collection
 from types import TracebackType
-from typing import Any, SupportsInt
+from typing import Any, Iterable, SupportsInt
 
 import adios2  # type: ignore[import-untyped]
 import numpy as np
@@ -251,6 +251,12 @@ class File:
     def end_step(self) -> None:
         assert FileState.is_open(self._state)
         return self._state.engine.end_step()  # type: ignore[no-any-return]
+
+    def steps(self) -> Iterable[int]:
+        for n in range(self.num_steps()):
+            self.begin_step()
+            yield n
+            self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         assert FileState.is_open(self._state)

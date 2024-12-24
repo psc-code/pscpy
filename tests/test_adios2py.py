@@ -192,11 +192,9 @@ def test_read_streaming_adios2(tmp_path):
 def test_read_streaming_adios2py(tmp_path):
     test_write_streaming(tmp_path)  # type: ignore[no-untyped-call]
     with adios2py.File(tmp_path / "test_streaming.bp", mode="r") as file:
-        for step in range(file.num_steps()):
-            file.begin_step()
+        for step in file.steps():
             scalar = file.get_variable("scalar")[()]
             assert step == scalar
-            file.end_step()
         assert step == 4
 
 
