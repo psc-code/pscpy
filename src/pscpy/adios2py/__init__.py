@@ -145,7 +145,7 @@ class Variable:
         return arr
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__module__}.{self.__class__.__name__}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
+        return f"{type(self)}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
 class FileState:

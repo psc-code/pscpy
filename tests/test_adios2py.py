@@ -83,10 +83,9 @@ def test_variable_dtype(pfd_file):
 def test_variable_repr(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
-        print(repr(var))
         assert (
             repr(var)
-            == "pscpy.adios2py.Variable(name=jeh, shape=(1, 128, 512, 9), dtype=float32"
+            == "<class 'pscpy.adios2py.Variable'>(name=jeh, shape=(1, 128, 512, 9), dtype=float32"
         )
 
     with pytest.raises(ValueError, match="variable is closed"):
