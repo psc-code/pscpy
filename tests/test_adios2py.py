@@ -189,6 +189,17 @@ def test_read_streaming_adios2(tmp_path):
         assert n == 4
 
 
+def test_read_streaming_adios2_step_persist(tmp_path):
+    test_write_streaming(tmp_path)  # type: ignore[no-untyped-call]
+    with adios2.Stream(str(tmp_path / "test_streaming.bp"), mode="r") as file:
+        for n, step in enumerate(file):
+            if n == 1:
+                step1 = step
+
+        # This may be confusing, but behaves as designed
+        assert step1.read("scalar") == 4
+
+
 def test_read_streaming_adios2py(test_file):
     for n, step in enumerate(test_file.steps()):
         scalar = step.get_variable("scalar")[()]
@@ -205,6 +216,15 @@ def test_read_streaming_adios2py_mixed(test_file):
         scalar = test_file.get_variable("scalar")[()]
         assert scalar == step.current_step()
     assert test_file.current_step() == 4
+
+
+@pytest.mark.xfail
+def test_read_streaming_adios2py_step_persist(test_file):
+    for n, step in enumerate(test_file.steps()):
+        if n == 1:
+            step1 = step
+
+    assert step1.get_variable("scalar")[()] == 1
 
 
 # def test_single_value():
