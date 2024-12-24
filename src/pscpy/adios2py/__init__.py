@@ -244,18 +244,26 @@ class File:
         assert FileState.is_open(self._state)
         return self._state.engine.steps()  # type: ignore[no-any-return]
 
-    def begin_step(self) -> None:
+    def current_step(self) -> int:
         assert FileState.is_open(self._state)
-        return self._state.engine.begin_step()  # type: ignore[no-any-return]
+        return self._state.engine.current_step()  # type: ignore[no-any-return]
+
+    def begin_step(self) -> adios2.StepStatus:
+        assert FileState.is_open(self._state)
+        return self._state.engine.begin_step()
 
     def end_step(self) -> None:
         assert FileState.is_open(self._state)
         return self._state.engine.end_step()  # type: ignore[no-any-return]
 
     def steps(self) -> Iterable[int]:
-        for n in range(self.num_steps()):
-            self.begin_step()
-            yield n
+        while True:
+            status = self.begin_step()
+            if status == adios2.bindings.StepStatus.EndOfStream:
+                break
+            assert status == adios2.bindings.StepStatus.OK
+
+            yield self.current_step()
             self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:

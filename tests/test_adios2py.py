@@ -196,6 +196,17 @@ def test_read_streaming_adios2py(test_file):
     assert n == 4
 
 
+def test_read_streaming_adios2py_mixed(test_file):
+    test_file.begin_step()
+    assert test_file.get_variable("scalar")[()] == 0
+    test_file.end_step()
+
+    for n in test_file.steps():
+        scalar = test_file.get_variable("scalar")[()]
+        assert n == scalar
+    assert n == 4
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
