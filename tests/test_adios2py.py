@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import adios2
 import numpy as np
+import pytest
 
 import pscpy
 from pscpy import adios2py
@@ -34,6 +35,15 @@ def test_get_variable():
         assert var.name == "jeh"
         assert var.shape == (1, 128, 512, 9)
         assert var.dtype == np.float32
+
+
+def test_variable_closed():
+    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
+        var = file.get_variable("jeh")
+        assert var._shape() == (1, 128, 512, 9)
+
+    with pytest.raises(ValueError, match="variable is closed"):
+        assert var._shape() == (1, 128, 512, 9)
 
 
 def test_is_reverse_dims():
