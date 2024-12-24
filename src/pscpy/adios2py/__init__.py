@@ -145,6 +145,9 @@ class Variable:
         return arr
 
     def __repr__(self) -> str:
+        if not self:
+            return f"{type(self)} (closed)"
+
         return f"{type(self)}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
