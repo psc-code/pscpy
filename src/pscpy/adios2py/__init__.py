@@ -226,6 +226,18 @@ class File:
         self._state.close()
         self._state = None
 
+    def num_steps(self) -> int:
+        assert FileState.is_open(self._state)
+        return self._state.engine.steps()  # type: ignore[no-any-return]
+
+    def begin_step(self) -> None:
+        assert FileState.is_open(self._state)
+        return self._state.engine.begin_step()  # type: ignore[no-any-return]
+
+    def end_step(self) -> None:
+        assert FileState.is_open(self._state)
+        return self._state.engine.end_step()  # type: ignore[no-any-return]
+
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         assert FileState.is_open(self._state)
 

@@ -59,6 +59,33 @@ def test_get_attribute():
         assert file.get_attribute("step") == 400
 
 
+def test_write_streaming(tmp_path):
+    with adios2.Stream(str(tmp_path / "test_streaming.bp"), mode="w") as file:
+        print("file", file)
+        for step, _ in enumerate(file.steps(5)):
+            file.write("scalar", step)
+
+
+def test_read_streaming_adios2(tmp_path):
+    test_write_streaming(tmp_path)  # type: ignore[no-untyped-call]
+    with adios2.Stream(str(tmp_path / "test_streaming.bp"), mode="r") as file:
+        for step, _ in enumerate(file):
+            scalar = file.read("scalar")
+            assert step == scalar
+        assert step == 4
+
+
+def test_read_streaming_adios2py(tmp_path):
+    test_write_streaming(tmp_path)  # type: ignore[no-untyped-call]
+    with adios2py.File(tmp_path / "test_streaming.bp", mode="r") as file:
+        for step in range(file.num_steps()):
+            file.begin_step()
+            scalar = file.get_variable("scalar")[()]
+            assert step == scalar
+            file.end_step()
+        assert step == 4
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
