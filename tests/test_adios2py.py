@@ -27,6 +27,11 @@ def test_with(pfd_file):
         pass
 
 
+def test_file_repr(pfd_file):
+    print(repr(pfd_file))
+    assert repr(pfd_file).startswith(f"{type(pfd_file)}(filename=")
+
+
 def test_variable_names(pfd_file):
     assert pfd_file.variable_names == set({"jeh"})
     assert pfd_file.attribute_names == set({"ib", "im", "step", "time"})

@@ -189,6 +189,7 @@ class File:
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
+        self._filename = filename_or_obj
         self._state = FileState(filename_or_obj)
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
@@ -203,6 +204,10 @@ class File:
         self.attribute_names: Collection[str] = (
             self._state.io.available_attributes().keys()
         )
+
+    def __repr__(self) -> str:
+        assert FileState.is_open(self._state)
+        return f"{type(self)}(filename='{self._filename}')"
 
     def __enter__(self) -> File:
         logger.debug("File.__enter__()")
