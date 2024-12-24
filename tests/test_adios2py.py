@@ -8,9 +8,13 @@ import pscpy
 from pscpy import adios2py
 
 
-def test_open_close():
-    file = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")
-    file.close()
+@pytest.fixture
+def pfd_file():
+    return adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")
+
+
+def test_open_close(pfd_file):
+    pfd_file.close()
 
 
 def test_open_twice():
@@ -18,41 +22,40 @@ def test_open_twice():
     file2 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
 
 
-def test_with():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp"):
+def test_with(pfd_file):
+    with pfd_file:
         pass
 
 
-def test_variable_names():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
-        assert file.variable_names == set({"jeh"})
-        assert file.attribute_names == set({"ib", "im", "step", "time"})
+def test_variable_names(pfd_file):
+    assert pfd_file.variable_names == set({"jeh"})
+    assert pfd_file.attribute_names == set({"ib", "im", "step", "time"})
 
 
-def test_get_variable():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
-        var = file.get_variable("jeh")
-        assert var.name == "jeh"
-        assert var.shape == (1, 128, 512, 9)
-        assert var.dtype == np.float32
+def test_get_variable(pfd_file):
+    var = pfd_file.get_variable("jeh")
+    assert var.name == "jeh"
+    assert var.shape == (1, 128, 512, 9)
+    assert var.dtype == np.float32
 
 
-def test_variable_closed():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
-        var = file.get_variable("jeh")
+def test_get_variable_not_found(pfd_file):
+    with pytest.raises(ValueError, match="not found"):
+        pfd_file.get_variable("xyz")
+
+
+def test_variable_shape(pfd_file):
+    with pfd_file:
+        var = pfd_file.get_variable("jeh")
         assert var._shape() == (1, 128, 512, 9)
 
     with pytest.raises(ValueError, match="variable is closed"):
         assert var._shape() == (1, 128, 512, 9)
 
 
-def test_is_reverse_dims():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
-        var = file.get_variable("jeh")
-        assert var.name == "jeh"
-        assert var.shape == (1, 128, 512, 9)
-        assert var.dtype == np.float32
-        assert not var.is_reverse_dims
+def test_variable_is_reverse_dims(pfd_file):
+    var = pfd_file.get_variable("jeh")
+    assert not var.is_reverse_dims
 
     # with adios2py.File(
     #     "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
@@ -61,12 +64,11 @@ def test_is_reverse_dims():
     #     assert var.is_reverse_dims
 
 
-def test_get_attribute():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp") as file:
-        assert all(file.get_attribute("ib") == (0, 0, 0))
-        assert all(file.get_attribute("im") == (1, 128, 128))
-        assert np.isclose(file.get_attribute("time"), 109.38)
-        assert file.get_attribute("step") == 400
+def test_get_attribute(pfd_file):
+    assert all(pfd_file.get_attribute("ib") == (0, 0, 0))
+    assert all(pfd_file.get_attribute("im") == (1, 128, 128))
+    assert np.isclose(pfd_file.get_attribute("time"), 109.38)
+    assert pfd_file.get_attribute("step") == 400
 
 
 def test_write_streaming(tmp_path):
