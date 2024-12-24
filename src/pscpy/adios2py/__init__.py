@@ -24,10 +24,13 @@ class Variable:
         var: adios2.Variable,
         engine: adios2.Engine,
         reverse_dims: bool | None = None,
+        step: int | None = None,
     ) -> None:
         self._var = var
         self._engine = engine
         self.name = self._name()
+        self.step = step
+
         self.is_reverse_dims = self._is_reverse_dims()
         self._reverse_dims = self.is_reverse_dims
         if reverse_dims is not None:
@@ -120,11 +123,16 @@ class Variable:
             arr_shape.append(sel_count[d])
 
         logger.debug(
-            "arr_shape = %s, sel_start = %s, sel_count = %s",
+            "arr_shape = %s, sel_start = %s, sel_count = %s step=%s",
             arr_shape,
             sel_start,
             sel_count,
+            self.step,
         )
+
+        if self.step is not None:
+            self._var.set_step_selection([self.step, 1])
+
         if len(sel_start) > 0:
             self._set_selection(sel_start, sel_count)
 
@@ -181,7 +189,7 @@ class File:
             filename_or_obj
         ).name.startswith(("pfd", "tfd")):
             self._reverse_dims = True
-        self._open_vars: dict[str, Variable] = {}
+        self._open_vars: dict[tuple[str, int | None], Variable] = {}
 
         self.variable_names: Collection[str] = (
             self._state.io.available_variables().keys()
@@ -218,19 +226,20 @@ class File:
         self._state.close()
         self._state = None
 
-    def get_variable(self, variable_name: str) -> Variable:
+    def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         assert FileState.is_open(self._state)
 
-        if variable_name not in self._open_vars:
+        if (variable_name, step) not in self._open_vars:
             var = Variable(
                 self._state.io.inquire_variable(variable_name),
                 self._state.engine,
                 self._reverse_dims,
+                step=step,
             )
-            self._open_vars[variable_name] = var
+            self._open_vars[(variable_name, step)] = var
             return var
 
-        return self._open_vars[variable_name]
+        return self._open_vars[(variable_name, step)]
 
     def get_attribute(self, attribute_name: str) -> Any:
         assert FileState.is_open(self._state)

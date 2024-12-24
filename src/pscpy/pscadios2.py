@@ -56,16 +56,20 @@ class Adios2Array(BackendArray):
     def __init__(
         self,
         variable_name: str,
+        step: int | None,
         datastore: Adios2Store,
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
+        self._step = step
         array = self.get_array()
         self.shape = array.shape
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
-        return self.datastore.acquire(needs_lock).get_variable(self.variable_name)
+        return self.datastore.acquire(needs_lock).get_variable(
+            self.variable_name, step=self._step
+        )
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(
@@ -85,11 +89,14 @@ class Adios2Store(AbstractDataStore):
         manager: FileManager,
         mode: str | None = None,
         lock: Lock = ADIOS2_LOCK,
+        step: int | None = None,
     ) -> None:
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
+        # keep track of attributes that belong with a variable
         self._var_attrs: set[str] = set()
+        self._step = step
 
     @classmethod
     def open(
@@ -113,6 +120,7 @@ class Adios2Store(AbstractDataStore):
         io_engine: tuple[Any, Any],
         mode: str = "r",
         lock: Lock | None = None,
+        step: int | None = None,
     ) -> Adios2Store:
         assert mode == "r"
         if lock is None:
@@ -120,7 +128,7 @@ class Adios2Store(AbstractDataStore):
 
         file = adios2py.File(io_engine, mode=mode)
         manager = DummyFileManager(file)  # type: ignore[no-untyped-call]
-        return cls(manager, mode=mode, lock=lock)
+        return cls(manager, mode=mode, lock=lock, step=step)
 
     def acquire(self, needs_lock: bool = True) -> adios2py.File:
         with self._manager.acquire_context(needs_lock) as root:  # type: ignore[no-untyped-call]
@@ -139,7 +147,7 @@ class Adios2Store(AbstractDataStore):
         )
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
-        data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
+        data = indexing.LazilyIndexedArray(Adios2Array(var_name, self._step, self))
         attr_names = [
             name for name in self.ds.attribute_names if name.startswith(f"{var_name}::")
         ]
