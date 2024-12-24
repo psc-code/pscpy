@@ -190,7 +190,7 @@ def test_read_streaming_adios2(tmp_path):
 
 
 def test_read_streaming_adios2py(test_file):
-    for n in test_file.steps():
+    for n, _ in enumerate(test_file.steps()):
         scalar = test_file.get_variable("scalar")[()]
         assert n == scalar
     assert n == 4
@@ -201,10 +201,10 @@ def test_read_streaming_adios2py_mixed(test_file):
     assert test_file.get_variable("scalar")[()] == 0
     test_file.end_step()
 
-    for n in test_file.steps():
+    for step in test_file.steps():
         scalar = test_file.get_variable("scalar")[()]
-        assert n == scalar
-    assert n == 4
+        assert scalar == step.current_step()
+    assert test_file.current_step() == 4
 
 
 # def test_single_value():

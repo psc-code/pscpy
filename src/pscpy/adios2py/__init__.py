@@ -256,14 +256,14 @@ class File:
         assert FileState.is_open(self._state)
         return self._state.engine.end_step()  # type: ignore[no-any-return]
 
-    def steps(self) -> Iterable[int]:
+    def steps(self) -> Iterable[File]:
         while True:
             status = self.begin_step()
             if status == adios2.bindings.StepStatus.EndOfStream:
                 break
             assert status == adios2.bindings.StepStatus.OK
 
-            yield self.current_step()
+            yield self
             self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
