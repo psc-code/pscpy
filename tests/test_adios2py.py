@@ -48,7 +48,7 @@ def test_variable_bool(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
         assert var
-        assert var._shape() == (1, 128, 512, 9)
+        assert var.shape == (1, 128, 512, 9)
 
     assert not var
 
@@ -56,10 +56,10 @@ def test_variable_bool(pfd_file):
 def test_variable_shape(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
-        assert var._shape() == (1, 128, 512, 9)
+        assert var.shape == (1, 128, 512, 9)
 
     with pytest.raises(ValueError, match="variable is closed"):
-        assert var._shape() == (1, 128, 512, 9)
+        assert var.shape == (1, 128, 512, 9)
 
 
 def test_variable_is_reverse_dims(pfd_file):

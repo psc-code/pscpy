@@ -35,7 +35,6 @@ class Variable:
         self._reverse_dims = self.is_reverse_dims
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
-        self.shape = self._shape()
         self.dtype = self._dtype()
         logger.debug("variable __init__ var %s engine %s", var, engine)
 
@@ -64,7 +63,8 @@ class Variable:
             (self._maybe_reverse(start), self._maybe_reverse(count))
         )
 
-    def _shape(self) -> tuple[int, ...]:
+    @property
+    def shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
 
         return self._maybe_reverse(tuple(self._var.shape()))
