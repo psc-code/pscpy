@@ -28,14 +28,12 @@ class Variable:
     ) -> None:
         self._var = var
         self._engine = engine
-        self.name = self._name()
         self.step = step
 
         self.is_reverse_dims = self._is_reverse_dims()
         self._reverse_dims = self.is_reverse_dims
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
-        self.dtype = self._dtype()
         logger.debug("variable __init__ var %s engine %s", var, engine)
 
     def close(self) -> None:
@@ -69,12 +67,14 @@ class Variable:
 
         return self._maybe_reverse(tuple(self._var.shape()))
 
-    def _name(self) -> str:
+    @property
+    def name(self) -> str:
         self._assert_not_closed()
 
         return self._var.name()  # type: ignore[no-any-return]
 
-    def _dtype(self) -> np.dtype[Any]:
+    @property
+    def dtype(self) -> np.dtype[Any]:
         self._assert_not_closed()
 
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]

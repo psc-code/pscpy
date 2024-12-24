@@ -62,6 +62,24 @@ def test_variable_shape(pfd_file):
         assert var.shape == (1, 128, 512, 9)
 
 
+def test_variable_name(pfd_file):
+    with pfd_file:
+        var = pfd_file.get_variable("jeh")
+        assert var.name == "jeh"
+
+    with pytest.raises(ValueError, match="variable is closed"):
+        assert var.name == "jeh"
+
+
+def test_variable_dtype(pfd_file):
+    with pfd_file:
+        var = pfd_file.get_variable("jeh")
+        assert var.dtype == np.float32
+
+    with pytest.raises(ValueError, match="variable is closed"):
+        assert var.dtype == np.float32
+
+
 def test_variable_is_reverse_dims(pfd_file):
     var = pfd_file.get_variable("jeh")
     assert not var.is_reverse_dims
