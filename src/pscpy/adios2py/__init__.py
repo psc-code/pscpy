@@ -44,8 +44,11 @@ class Variable:
         self._var = None
         self._engine = None
 
+    def __bool__(self) -> bool:
+        return bool(self._var)
+
     def _assert_not_closed(self) -> None:
-        if not self._var:
+        if not self:
             error_message = "adios2py: variable is closed"
             raise ValueError(error_message)
 

@@ -44,6 +44,15 @@ def test_get_variable_not_found(pfd_file):
         pfd_file.get_variable("xyz")
 
 
+def test_variable_bool(pfd_file):
+    with pfd_file:
+        var = pfd_file.get_variable("jeh")
+        assert var
+        assert var._shape() == (1, 128, 512, 9)
+
+    assert not var
+
+
 def test_variable_shape(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
