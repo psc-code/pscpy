@@ -13,6 +13,18 @@ def pfd_file():
     return adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")
 
 
+@pytest.fixture
+def test_file(tmp_path):
+    filename = tmp_path / "test_file.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            file.write("scalar", step)
+            arr1d = np.arange(10)
+            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+
+    return adios2py.File(filename, mode="r")
+
+
 def test_open_close(pfd_file):
     pfd_file.close()
 
@@ -104,6 +116,45 @@ def test_variable_is_reverse_dims(pfd_file):
     # ) as file:
     #     var = file.get_variable("pot")
     #     assert var.is_reverse_dims
+
+
+def test_variable_getitem_scalar(test_file):
+    test_file.begin_step()
+    var = test_file.get_variable("scalar")
+    assert var[()] == 0
+    test_file.end_step()
+
+
+def test_variable_getitem_arr1d(test_file):
+    test_file.begin_step()
+    var = test_file.get_variable("arr1d")
+    assert np.all(var[()] == np.arange(10))
+    test_file.end_step()
+
+
+def test_variable_getitem_arr1d_indexing(test_file):
+    test_file.begin_step()
+    var = test_file.get_variable("arr1d")
+    assert var[2] == 2
+    assert np.all(var[2:4] == np.arange(10)[2:4])
+    assert np.all(var[:] == np.arange(10)[:])
+    test_file.end_step()
+
+
+@pytest.mark.xfail
+def test_variable_getitem_arr1d_indexing_step(test_file):
+    test_file.begin_step()
+    var = test_file.get_variable("arr1d")
+    assert np.all(var[::2] == np.arange(10)[::2])
+    test_file.end_step()
+
+
+@pytest.mark.xfail
+def test_variable_getitem_arr1d_indexing_reverse(test_file):
+    test_file.begin_step()
+    var = test_file.get_variable("arr1d")
+    assert np.all(var[::-1] == np.arange(10)[::-1])
+    test_file.end_step()
 
 
 def test_get_attribute(pfd_file):
