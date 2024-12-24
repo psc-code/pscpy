@@ -157,6 +157,15 @@ def test_variable_getitem_arr1d_indexing_reverse(test_file):
     test_file.end_step()
 
 
+def test_variable_array(test_file):
+    test_file.begin_step()
+    scalar = np.asarray(test_file.get_variable("scalar"))
+    assert np.array_equal(scalar, 0)
+    arr1d = np.asarray(test_file.get_variable("arr1d"))
+    assert np.array_equal(arr1d, np.arange(10))
+    test_file.end_step()
+
+
 def test_get_attribute(pfd_file):
     assert all(pfd_file.get_attribute("ib") == (0, 0, 0))
     assert all(pfd_file.get_attribute("im") == (1, 128, 128))

@@ -83,6 +83,9 @@ class Variable:
         infos = self._engine.blocks_info(self.name, self._engine.current_step())
         return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
+    def __array__(self) -> np.ndarray[Any, Any]:
+        return self[()]  # type: ignore [no-any-return]
+
     def __getitem__(
         self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
     ) -> NDArray[Any]:
