@@ -230,8 +230,12 @@ class File:
         assert FileState.is_open(self._state)
 
         if (variable_name, step) not in self._open_vars:
+            adios2_var = self._state.io.inquire_variable(variable_name)
+            if adios2_var is None:
+                msg = f"Variable '{variable_name}' not found"
+                raise ValueError(msg)
             var = Variable(
-                self._state.io.inquire_variable(variable_name),
+                adios2_var,
                 self._state.engine,
                 self._reverse_dims,
                 step=step,
