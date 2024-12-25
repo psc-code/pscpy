@@ -21,24 +21,24 @@ class Variable:
     def __init__(
         self,
         var: adios2.Variable,
-        engine: adios2.Engine,
+        file: adios2.File,
         reverse_dims: bool | None = None,
         step: int | None = None,
     ) -> None:
         self._var = var
-        self._engine = engine
+        self._file = file
         self.step = step
 
         self.is_reverse_dims = self._is_reverse_dims()
         self._reverse_dims = self.is_reverse_dims
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
-        logger.debug("variable __init__ var %s engine %s", var, engine)
+        logger.debug("Variable.__init__(var=%s, file=%s)", var, file)
 
     def close(self) -> None:
         logger.debug("adios2py.variable close")
         self._var = None
-        self._engine = None
+        self._file = None
 
     def __bool__(self) -> bool:
         return bool(self._var)
@@ -79,7 +79,9 @@ class Variable:
         return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
-        infos = self._engine.blocks_info(self.name, self._engine.current_step())
+        infos = self._file.engine.blocks_info(
+            self.name, self._file.engine.current_step()
+        )
         return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
     def __array__(self) -> np.ndarray[Any, Any]:
@@ -143,7 +145,7 @@ class Variable:
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        self._engine.get(self._var, arr, adios2.bindings.Mode.Sync)
+        self._file.engine.get(self._var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
@@ -298,7 +300,7 @@ class File:
                 raise ValueError(msg)
             var = Variable(
                 adios2_var,
-                self.engine,
+                self,
                 self._reverse_dims,
                 step=step,
             )
