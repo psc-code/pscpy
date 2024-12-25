@@ -211,8 +211,11 @@ class File:
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
 
+    def keys(self) -> set[str]:
+        return set(self._variable_names)
+
     def _update_variables_attributes(self) -> None:
-        self.variable_names: Collection[str] = self.io.available_variables().keys()
+        self._variable_names: Collection[str] = self.io.available_variables().keys()
         self.attribute_names: Collection[str] = self.io.available_attributes().keys()
 
     def reset(self) -> None:

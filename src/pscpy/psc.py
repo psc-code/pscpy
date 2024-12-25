@@ -32,8 +32,7 @@ class RunInfo:
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
     ) -> None:
-        assert len(file.variable_names) > 0
-        var = next(iter(file.variable_names))
+        var = next(iter(file.keys()))
         self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
 
         self.length = _get_array_attribute(file, "length", length)
