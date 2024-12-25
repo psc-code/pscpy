@@ -171,9 +171,9 @@ def _close_io(io: adios2.IO) -> None:
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _own_io_engine: bool
-    _io: adios2.IO | None
-    _engine: adios2.Engine | None
+    _own_io_engine: bool = False
+    _io: adios2.IO | None = None
+    _engine: adios2.Engine | None = None
 
     def __init__(
         self,
