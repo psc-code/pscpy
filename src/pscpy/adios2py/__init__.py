@@ -169,6 +169,7 @@ class File:
     _own_io_engine: bool = False
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
+    _step: int | None = None
 
     def __init__(
         self,
@@ -282,11 +283,18 @@ class File:
                 self.end_step()
         elif self._mode == "rra":
             for step in range(self.num_steps()):
-                self._step = step
+                self.set_step(step)
                 yield self
 
-    def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
-        return Variable(variable_name, self, step=step)
+    def set_step(self, step: int | None) -> None:
+        self._step = step
+
+    def get_variable(self, variable_name: str) -> Variable:
+        if self._mode == "r":
+            return Variable(variable_name, self)
+
+        assert self._mode == "rra"
+        return Variable(variable_name, self, step=self._step)
 
 
 class AttrsProxy(Mapping[str, Any]):

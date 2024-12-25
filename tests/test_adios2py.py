@@ -234,19 +234,11 @@ def test_read_streaming_adios2_step_persist(tmp_path):
         assert step1.read("scalar") == 4
 
 
-@pytest.mark.parametrize("mode", ["r", pytest.param("rra", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("mode", ["r", "rra"])
 def test_read_adios2py(test_filename, mode):
     with adios2py.File(test_filename, mode=mode) as file:
         for n, step in enumerate(file.steps()):
             scalar = step.get_variable("scalar")[()]
-            assert scalar == n
-        assert n == 4
-
-
-def test_read_rra_step(test_filename):
-    with adios2py.File(test_filename, mode="rra") as file:
-        for n, step in enumerate(file.steps()):
-            scalar = step.get_variable("scalar", step=step._step)[()]
             assert scalar == n
         assert n == 4
 

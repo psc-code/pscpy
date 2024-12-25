@@ -67,9 +67,8 @@ class Adios2Array(BackendArray):
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
-        return self.datastore.acquire(needs_lock).get_variable(
-            self.variable_name, step=self._step
-        )
+        self.datastore.ds.set_step(self._step)
+        return self.datastore.acquire(needs_lock).get_variable(self.variable_name)
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(
