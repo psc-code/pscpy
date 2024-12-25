@@ -4,6 +4,7 @@ import adios2
 import numpy as np
 import pytest
 
+from pscpy import adios2py
 from pscpy.pscadios2 import Adios2Store
 
 
@@ -21,6 +22,16 @@ def test_store(tmp_path):
 
 def test_open_close(test_store):
     test_store.close()
+
+
+def test_open_with_parameters(test_store):
+    filename = test_store.ds._filename
+    test_store.close()
+
+    params = {"OpenTimeoutSecs": "20"}
+    with Adios2Store.open(filename, parameters=params) as store:
+        assert adios2py.FileState.is_open(store.ds._state)
+        assert store.ds._state.io.parameters() == params
 
 
 def test_vars_attrs(test_store):

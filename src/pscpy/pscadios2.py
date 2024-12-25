@@ -104,6 +104,7 @@ class Adios2Store(AbstractDataStore):
         filename: str,
         mode: str = "r",
         lock: Lock | None = None,
+        parameters: dict[str, str] | None = None,
     ) -> Adios2Store:
         if lock is None:
             if mode == "r":
@@ -111,7 +112,10 @@ class Adios2Store(AbstractDataStore):
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
 
-        manager = CachingFileManager(adios2py.File, filename, mode=mode)
+        kwargs = {}
+        if parameters is not None:
+            kwargs["parameters"] = tuple(sorted(parameters.items()))
+        manager = CachingFileManager(adios2py.File, filename, mode=mode, kwargs=kwargs)
         return cls(manager, mode=mode, lock=lock)
 
     @classmethod

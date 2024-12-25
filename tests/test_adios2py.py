@@ -44,7 +44,7 @@ def test_open_from_io():
 
 
 def test_open_with_parameters():
-    params = {"OpenTimeOut": "15"}
+    params = {"OpenTimeoutSecs": "15"}
     with adios2py.File(
         pscpy.sample_dir / "pfd.000000400.bp", parameters=params
     ) as file:
