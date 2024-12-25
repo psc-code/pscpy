@@ -154,7 +154,9 @@ class Adios2Store(AbstractDataStore):
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self._step, self))
         attr_names = [
-            name for name in self.ds.attribute_names if name.startswith(f"{var_name}::")
+            name
+            for name in self.ds.attrs.keys()  # noqa: SIM118
+            if name.startswith(f"{var_name}::")
         ]
         self._var_attrs |= set(attr_names)
         attrs = {
@@ -171,7 +173,7 @@ class Adios2Store(AbstractDataStore):
 
     @override
     def get_attrs(self) -> Frozen[str, Any]:
-        attrs_remaining = set(self.ds.attribute_names) - self._var_attrs
+        attrs_remaining = self.ds.attrs.keys() - self._var_attrs
         return FrozenDict(
             (name, self.ds.get_attribute(name)) for name in attrs_remaining
         )

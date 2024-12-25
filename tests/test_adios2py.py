@@ -63,7 +63,10 @@ def test_file_repr(pfd_file):
 
 def test_keys(pfd_file):
     assert pfd_file.keys() == set({"jeh"})
-    assert pfd_file.attribute_names == set({"ib", "im", "step", "time"})
+
+
+def test_attrs_keys(pfd_file):
+    assert pfd_file.attrs.keys() == set({"ib", "im", "step", "time"})
 
 
 def test_get_variable(pfd_file):

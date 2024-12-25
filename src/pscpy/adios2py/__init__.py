@@ -214,8 +214,12 @@ class File:
     def keys(self) -> set[str]:
         return self.io.available_variables().keys()  # type: ignore[no-any-return]
 
+    @property
+    def attrs(self) -> AttrsProxy:
+        return AttrsProxy(self)
+
     def _update_variables_attributes(self) -> None:
-        self.attribute_names: Collection[str] = self.io.available_attributes().keys()
+        self._attribute_names: Collection[str] = self.io.available_attributes().keys()
 
     def reset(self) -> None:
         for var in self._open_vars.values():
@@ -316,3 +320,11 @@ class File:
             return attr.data_string()
 
         return attr.data()
+
+
+class AttrsProxy:
+    def __init__(self, file: File) -> None:
+        self._file = file
+
+    def keys(self) -> set[str]:
+        return set(self._file._attribute_names)
