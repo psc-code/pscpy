@@ -178,7 +178,8 @@ class File:
         engine_type: str | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
-        assert mode == "r"
+        assert mode in ("r", "rra")
+        self._mode = mode
         self._filename = filename_or_obj
 
         if isinstance(filename_or_obj, tuple):
@@ -192,7 +193,14 @@ class File:
                 self.io.set_parameters(dict(parameters))
             if engine_type is not None:
                 self.io.set_engine(engine_type)
-            self._engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
+            if mode == "r":
+                openmode = adios2.bindings.Mode.Read
+            elif mode == "rra":
+                openmode = adios2.bindings.Mode.ReadRandomAccess
+            else:
+                msg = f"adios2py: invalid mode {mode}"
+                raise ValueError(msg)
+            self._engine = self.io.open(str(filename_or_obj), openmode)
 
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
@@ -263,14 +271,19 @@ class File:
         return self.engine.end_step()  # type: ignore[no-any-return]
 
     def steps(self) -> Iterable[File]:
-        while True:
-            status = self.begin_step()
-            if status == adios2.bindings.StepStatus.EndOfStream:
-                break
-            assert status == adios2.bindings.StepStatus.OK
+        if self._mode == "r":
+            while True:
+                status = self.begin_step()
+                if status == adios2.bindings.StepStatus.EndOfStream:
+                    break
+                assert status == adios2.bindings.StepStatus.OK
 
-            yield self
-            self.end_step()
+                yield self
+                self.end_step()
+        elif self._mode == "rra":
+            for step in range(self.num_steps()):
+                self._step = step
+                yield self
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         return Variable(variable_name, self, step=step)

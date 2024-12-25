@@ -235,7 +235,7 @@ def test_read_streaming_adios2_step_persist(tmp_path):
 
 
 @pytest.mark.parametrize("mode", ["r", pytest.param("rra", marks=pytest.mark.xfail)])
-def test_read_streaming_adios2py(test_filename, mode):
+def test_read_adios2py(test_filename, mode):
     with adios2py.File(test_filename, mode=mode) as file:
         for n, step in enumerate(file.steps()):
             scalar = step.get_variable("scalar")[()]
