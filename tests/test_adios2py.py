@@ -246,7 +246,7 @@ def test_read_adios2py(test_filename, mode):
 def test_read_rra_step(test_filename):
     with adios2py.File(test_filename, mode="rra") as file:
         for n, step in enumerate(file.steps()):
-            scalar = step.get_variable("scalar", step=n)[()]
+            scalar = step.get_variable("scalar", step=step._step)[()]
             assert scalar == n
         assert n == 4
 
