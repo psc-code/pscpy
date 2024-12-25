@@ -161,15 +161,21 @@ class FileState:
     _io_count = itertools.count()
 
     def __init__(
-        self, filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any]
+        self,
+        filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
+        io: adios2.IO | None = None,
     ) -> None:
         if isinstance(filename_or_obj, tuple):
             self.io, self.engine = filename_or_obj
             self.io_name = None
         else:
-            self.io_name = f"io-adios2py-{next(self._io_count)}"
-            logger.debug("io_name = %s", self.io_name)
-            self.io = self._ad.declare_io(self.io_name)
+            if io is None:
+                self.io_name = f"io-adios2py-{next(self._io_count)}"
+                logger.debug("io_name = %s", self.io_name)
+                self.io = self._ad.declare_io(self.io_name)
+            else:
+                self.io_name = None
+                self.io = io
             self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
     def close(self) -> None:
@@ -188,12 +194,15 @@ class File:
     _state: FileState | None
 
     def __init__(
-        self, filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any], mode: str = "r"
+        self,
+        filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
+        mode: str = "r",
+        io: adios2.IO | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
         self._filename = filename_or_obj
-        self._state = FileState(filename_or_obj)
+        self._state = FileState(filename_or_obj, io)
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
             filename_or_obj

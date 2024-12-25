@@ -34,6 +34,15 @@ def test_open_twice():
     file2 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
 
 
+def test_open_from_io():
+    adios = adios2.Adios()
+    io = adios.declare_io("my-io")
+
+    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp", io=io) as file:
+        assert adios2py.FileState.is_open(file._state)
+        assert file._state.io == io
+
+
 def test_with(pfd_file):
     with pfd_file:
         pass
