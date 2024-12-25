@@ -41,12 +41,16 @@ class Variable:
             self._reverse_dims = reverse_dims
 
     def close(self) -> None:
-        logger.debug("adios2py.variable close")
+        logger.debug("adios2py.Variable(name=%s) closed", self._name)
         self._var = None
         self._file = None
 
     def __bool__(self) -> bool:
         return bool(self._var)
+
+    @property
+    def var(self) -> adios2.Variable:
+        return self._var
 
     def _assert_not_closed(self) -> None:
         if not self:
@@ -69,19 +73,19 @@ class Variable:
     def shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
 
-        return self._maybe_reverse(tuple(self._var.shape()))
+        return self._maybe_reverse(tuple(self.var.shape()))
 
     @property
     def name(self) -> str:
         self._assert_not_closed()
 
-        return self._var.name()  # type: ignore[no-any-return]
+        return self.var.name()  # type: ignore[no-any-return]
 
     @property
     def dtype(self) -> np.dtype[Any]:
         self._assert_not_closed()
 
-        return np.dtype(adios2.type_adios_to_numpy(self._var.type()))  # type: ignore[no-any-return]
+        return np.dtype(adios2.type_adios_to_numpy(self.var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
         infos = self._file.engine.blocks_info(
@@ -150,7 +154,7 @@ class Variable:
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        self._file.engine.get(self._var, arr, adios2.bindings.Mode.Sync)
+        self._file.engine.get(self.var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
