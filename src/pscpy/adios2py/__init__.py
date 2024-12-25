@@ -224,14 +224,8 @@ class File:
         self._update_variables_attributes()
 
     def _update_variables_attributes(self) -> None:
-        assert FileState.is_open(self._state)
-
-        self.variable_names: Collection[str] = (
-            self._state.io.available_variables().keys()
-        )
-        self.attribute_names: Collection[str] = (
-            self._state.io.available_attributes().keys()
-        )
+        self.variable_names: Collection[str] = self._io.available_variables().keys()
+        self.attribute_names: Collection[str] = self._io.available_attributes().keys()
 
     def reset(self) -> None:
         for var in self._open_vars.values():
@@ -241,7 +235,6 @@ class File:
         self._update_variables_attributes()
 
     def __repr__(self) -> str:
-        assert FileState.is_open(self._state)
         return f"{type(self)}(filename='{self._filename}')"
 
     def __enter__(self) -> File:
@@ -272,24 +265,30 @@ class File:
         self._state.close()
         self._state = None
 
-    def num_steps(self) -> int:
+    @property
+    def _engine(self) -> adios2.Engine:
         assert FileState.is_open(self._state)
-        return self._state.engine.steps()  # type: ignore[no-any-return]
+        return self._state.engine
+
+    @property
+    def _io(self) -> adios2.IO:
+        assert FileState.is_open(self._state)
+        return self._state.io
+
+    def num_steps(self) -> int:
+        return self._engine.steps()  # type: ignore[no-any-return]
 
     def current_step(self) -> int:
-        assert FileState.is_open(self._state)
-        return self._state.engine.current_step()  # type: ignore[no-any-return]
+        return self._engine.current_step()  # type: ignore[no-any-return]
 
     def begin_step(self) -> adios2.StepStatus:
-        assert FileState.is_open(self._state)
-        status = self._state.engine.begin_step()
+        status = self._engine.begin_step()
         if status == adios2.bindings.StepStatus.OK:
             self.reset()
         return status
 
     def end_step(self) -> None:
-        assert FileState.is_open(self._state)
-        return self._state.engine.end_step()  # type: ignore[no-any-return]
+        return self._engine.end_step()  # type: ignore[no-any-return]
 
     def steps(self) -> Iterable[File]:
         while True:
@@ -302,16 +301,14 @@ class File:
             self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
-        assert FileState.is_open(self._state)
-
         if (variable_name, step) not in self._open_vars:
-            adios2_var = self._state.io.inquire_variable(variable_name)
+            adios2_var = self._io.inquire_variable(variable_name)
             if adios2_var is None:
                 msg = f"Variable '{variable_name}' not found"
                 raise ValueError(msg)
             var = Variable(
                 adios2_var,
-                self._state.engine,
+                self._engine,
                 self._reverse_dims,
                 step=step,
             )
@@ -321,9 +318,7 @@ class File:
         return self._open_vars[(variable_name, step)]
 
     def get_attribute(self, attribute_name: str) -> Any:
-        assert FileState.is_open(self._state)
-
-        attr = self._state.io.inquire_attribute(attribute_name)
+        attr = self._io.inquire_attribute(attribute_name)
         if attr.type() == "string":
             return attr.data_string()
 
