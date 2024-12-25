@@ -5,18 +5,7 @@ from typing import Any, Iterable
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .adios2py import File
-
-
-def _get_array_attribute(
-    file: File, attribute_name: str, default: ArrayLike | None
-) -> NDArray[np.floating[Any]]:
-    if attribute_name in file.attrs:
-        return np.asarray(file.attrs[attribute_name])
-    if default is not None:
-        return np.asarray(default)
-    error_messsage = f"Missing attribute '{attribute_name}' with no default specified."
-    raise KeyError(error_messsage)
+from . import adios2py
 
 
 class RunInfo:
@@ -28,15 +17,15 @@ class RunInfo:
 
     def __init__(
         self,
-        file: File,
+        file: adios2py.File,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
     ) -> None:
         var = next(iter(file.keys()))
         self.gdims = np.asarray(file.get_variable(var).shape)[::-1]
 
-        self.length = _get_array_attribute(file, "length", length)
-        self.corner = _get_array_attribute(file, "corner", corner)
+        self.length = file.attrs.get("length", length)
+        self.corner = file.attrs.get("corner", corner)
 
         self.x = self._get_coord(0)
         self.y = self._get_coord(1)
