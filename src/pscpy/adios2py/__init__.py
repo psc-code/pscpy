@@ -279,13 +279,6 @@ class File:
             step=step,
         )
 
-    def get_attribute(self, attribute_name: str) -> Any:
-        attr = self.io.inquire_attribute(attribute_name)
-        if attr.type() == "string":
-            return attr.data_string()
-
-        return attr.data()
-
 
 class AttrsProxy:
     def __init__(self, file: File) -> None:
@@ -293,3 +286,10 @@ class AttrsProxy:
 
     def keys(self) -> set[str]:
         return set(self._file.io.available_attributes().keys())
+
+    def __getitem__(self, name: str) -> Any:
+        attr = self._file.io.inquire_attribute(name)
+        if attr.type() == "string":
+            return attr.data_string()
+
+        return attr.data()

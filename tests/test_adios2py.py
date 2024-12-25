@@ -187,10 +187,10 @@ def test_variable_array(test_file):
 
 
 def test_get_attribute(pfd_file):
-    assert all(pfd_file.get_attribute("ib") == (0, 0, 0))
-    assert all(pfd_file.get_attribute("im") == (1, 128, 128))
-    assert np.isclose(pfd_file.get_attribute("time"), 109.38)
-    assert pfd_file.get_attribute("step") == 400
+    assert all(pfd_file.attrs["ib"] == (0, 0, 0))
+    assert all(pfd_file.attrs["im"] == (1, 128, 128))
+    assert np.isclose(pfd_file.attrs["time"], 109.38)
+    assert pfd_file.attrs["step"] == 400
 
 
 def test_write_streaming(tmp_path):
@@ -269,8 +269,8 @@ def test_construct_from_engine_io():
         str(pscpy.sample_dir / "pfd.000000400.bp"), adios2.bindings.Mode.Read
     )
     with adios2py.File((io, engine)) as file:
-        assert all(file.get_attribute("ib") == (0, 0, 0))
-        assert all(file.get_attribute("im") == (1, 128, 128))
+        assert all(file.attrs["ib"] == (0, 0, 0))
+        assert all(file.attrs["im"] == (1, 128, 128))
 
     engine.close()
     ad.remove_io("io_name")

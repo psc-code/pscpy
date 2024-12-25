@@ -160,7 +160,7 @@ class Adios2Store(AbstractDataStore):
         ]
         self._var_attrs |= set(attr_names)
         attrs = {
-            name.removeprefix(f"{var_name}::"): self.ds.get_attribute(name)  # type: ignore[attr-defined]
+            name.removeprefix(f"{var_name}::"): self.ds.attrs[name]  # type: ignore[attr-defined]
             for name in attr_names
         }
         if "xr-dims" in attrs:
@@ -174,9 +174,7 @@ class Adios2Store(AbstractDataStore):
     @override
     def get_attrs(self) -> Frozen[str, Any]:
         attrs_remaining = self.ds.attrs.keys() - self._var_attrs
-        return FrozenDict(
-            (name, self.ds.get_attribute(name)) for name in attrs_remaining
-        )
+        return FrozenDict((name, self.ds.attrs[name]) for name in attrs_remaining)
 
     @override
     def get_dimensions(self) -> Never:
