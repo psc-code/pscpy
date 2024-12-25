@@ -3,9 +3,9 @@ from __future__ import annotations
 import itertools
 import logging
 import os
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from types import TracebackType
-from typing import Any, Iterable, SupportsInt
+from typing import Any, Iterable, Iterator, SupportsInt
 
 import adios2  # type: ignore[import-untyped]
 import numpy as np
@@ -280,19 +280,25 @@ class File:
         )
 
 
-class AttrsProxy:
+class AttrsProxy(Mapping[str, Any]):
     def __init__(self, file: File) -> None:
         self._file = file
 
-    def keys(self) -> set[str]:
-        return set(self._file.io.available_attributes().keys())
-
     def __getitem__(self, name: str) -> Any:
         attr = self._file.io.inquire_attribute(name)
+        if not attr:
+            raise KeyError()
+
         if attr.type() == "string":
             return attr.data_string()
 
         return attr.data()
 
-    def __contains__(self, item: str) -> bool:
-        return item in self.keys()
+    def __len__(self) -> int:
+        return len(self._keys())
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._keys()
+
+    def _keys(self) -> set[str]:
+        return set(self._file.io.available_attributes().keys())

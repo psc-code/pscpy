@@ -154,9 +154,7 @@ class Adios2Store(AbstractDataStore):
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self._step, self))
         attr_names = [
-            name
-            for name in self.ds.attrs.keys()  # noqa: SIM118
-            if name.startswith(f"{var_name}::")
+            name for name in self.ds.attrs if name.startswith(f"{var_name}::")
         ]
         self._var_attrs |= set(attr_names)
         attrs = {
