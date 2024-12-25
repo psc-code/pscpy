@@ -227,6 +227,11 @@ def test_read_streaming_adios2py_step_persist(test_file):
     assert step1.get_variable("scalar")[()] == 1
 
 
+@pytest.mark.xfail
+def test_read_streaming_adios2py_current_step_0(test_file):
+    assert test_file.current_step() is None
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
