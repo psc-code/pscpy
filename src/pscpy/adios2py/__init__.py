@@ -202,10 +202,10 @@ class File:
             logger.debug("io_name = %s", self._state.io_name)
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
-                self._state.io.set_parameters(dict(parameters))
+                self.io.set_parameters(dict(parameters))
             if engine is not None:
-                self._state.io.set_engine(engine)
-            self._state.engine = self._io.open(
+                self.io.set_engine(engine)
+            self._state.engine = self.io.open(
                 str(filename_or_obj), adios2.bindings.Mode.Read
             )
 
@@ -222,8 +222,8 @@ class File:
         return self._state.engine is not None and self._state.io is not None
 
     def _update_variables_attributes(self) -> None:
-        self.variable_names: Collection[str] = self._io.available_variables().keys()
-        self.attribute_names: Collection[str] = self._io.available_attributes().keys()
+        self.variable_names: Collection[str] = self.io.available_variables().keys()
+        self.attribute_names: Collection[str] = self.io.available_attributes().keys()
 
     def reset(self) -> None:
         for var in self._open_vars.values():
@@ -263,35 +263,35 @@ class File:
         if (
             self._state.io_name
         ):  # if we created the io/engine, rather than having it passed in
-            self._engine.close()
-            _close_io(self._io)
+            self.engine.close()
+            _close_io(self.io)
         self._state.engine = None
         self._state.io = None
 
     @property
-    def _engine(self) -> adios2.Engine:
+    def engine(self) -> adios2.Engine:
         assert self._state.engine
         return self._state.engine
 
     @property
-    def _io(self) -> adios2.IO:
+    def io(self) -> adios2.IO:
         assert self._state.io
         return self._state.io
 
     def num_steps(self) -> int:
-        return self._engine.steps()  # type: ignore[no-any-return]
+        return self.engine.steps()  # type: ignore[no-any-return]
 
     def current_step(self) -> int:
-        return self._engine.current_step()  # type: ignore[no-any-return]
+        return self.engine.current_step()  # type: ignore[no-any-return]
 
     def begin_step(self) -> adios2.StepStatus:
-        status = self._engine.begin_step()
+        status = self.engine.begin_step()
         if status == adios2.bindings.StepStatus.OK:
             self.reset()
         return status
 
     def end_step(self) -> None:
-        return self._engine.end_step()  # type: ignore[no-any-return]
+        return self.engine.end_step()  # type: ignore[no-any-return]
 
     def steps(self) -> Iterable[File]:
         while True:
@@ -305,13 +305,13 @@ class File:
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         if (variable_name, step) not in self._open_vars:
-            adios2_var = self._io.inquire_variable(variable_name)
+            adios2_var = self.io.inquire_variable(variable_name)
             if adios2_var is None:
                 msg = f"Variable '{variable_name}' not found"
                 raise ValueError(msg)
             var = Variable(
                 adios2_var,
-                self._engine,
+                self.engine,
                 self._reverse_dims,
                 step=step,
             )
@@ -321,7 +321,7 @@ class File:
         return self._open_vars[(variable_name, step)]
 
     def get_attribute(self, attribute_name: str) -> Any:
-        attr = self._io.inquire_attribute(attribute_name)
+        attr = self.io.inquire_attribute(attribute_name)
         if attr.type() == "string":
             return attr.data_string()
 

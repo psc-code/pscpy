@@ -30,14 +30,14 @@ def test_open_with_parameters(test_store):
 
     params = {"OpenTimeoutSecs": "20"}
     with Adios2Store.open(filename, parameters=params) as store:
-        assert store.ds._io.parameters() == params
+        assert store.ds.io.parameters() == params
 
 
 def test_open_with_engine():
     with Adios2Store.open(
         str(pscpy.sample_dir / "pfd.000000400.bp"), engine="BP4"
     ) as store:
-        assert store.ds._io.engine_type() == "BP4"
+        assert store.ds.io.engine_type() == "BP4"
 
 
 def test_vars_attrs(test_store):
