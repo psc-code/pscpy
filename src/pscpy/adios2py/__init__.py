@@ -169,18 +169,12 @@ def _close_io(io: adios2.IO) -> None:
     _ad.remove_io(io._name)
 
 
-class FileState:
-    """Collects the state of a `File` to reflect the fact that they are coupled."""
-
-    engine: adios2.Engine
-
-
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _state: FileState
     _io_name: str | None
     _io: adios2.IO
+    _engine: adios2.Engine
 
     def __init__(
         self,
@@ -193,10 +187,9 @@ class File:
         assert mode == "r"
         self._filename = filename_or_obj
 
-        self._state = FileState()
         if isinstance(filename_or_obj, tuple):
             self._io_name = None
-            self._io, self._state.engine = filename_or_obj
+            self._io, self._engine = filename_or_obj
         else:
             self._io_name, self._io = next(_generate_io)
             logger.debug("io_name = %s", self._io_name)
@@ -205,9 +198,7 @@ class File:
                 self.io.set_parameters(dict(parameters))
             if engine is not None:
                 self.io.set_engine(engine)
-            self._state.engine = self.io.open(
-                str(filename_or_obj), adios2.bindings.Mode.Read
-            )
+            self._engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
@@ -219,7 +210,7 @@ class File:
         self._update_variables_attributes()
 
     def __bool__(self) -> bool:
-        return self._state.engine is not None and self._io is not None
+        return self._engine is not None and self._io is not None
 
     def _update_variables_attributes(self) -> None:
         self.variable_names: Collection[str] = self.io.available_variables().keys()
@@ -263,13 +254,13 @@ class File:
         if self._io_name:  # if we created the io/engine ourselves
             self.engine.close()
             _close_io(self.io)
-        self._state.engine = None
+        self._engine = None
         self._io = None
 
     @property
     def engine(self) -> adios2.Engine:
-        assert self._state.engine
-        return self._state.engine
+        assert self._engine
+        return self._engine
 
     @property
     def io(self) -> adios2.IO:
