@@ -52,6 +52,12 @@ def test_open_with_parameters():
         assert file._state.io.parameters() == params
 
 
+def test_open_with_engine():
+    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp", engine="BP4") as file:
+        assert adios2py.FileState.is_open(file._state)
+        assert file._state.io.engine_type() == "BP4"
+
+
 def test_with(pfd_file):
     with pfd_file:
         pass

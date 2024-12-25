@@ -165,6 +165,7 @@ class FileState:
         filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
         io: adios2.IO | None = None,
         parameters: dict[str, str] | tuple[tuple[str, str], ...] | None = None,
+        engine: str | None = None,
     ) -> None:
         if isinstance(filename_or_obj, tuple):
             self.io, self.engine = filename_or_obj
@@ -180,6 +181,8 @@ class FileState:
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
                 self.io.set_parameters(dict(parameters))
+            if engine is not None:
+                self.io.set_engine(engine)
             self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
     def close(self) -> None:
@@ -203,11 +206,14 @@ class File:
         mode: str = "r",
         io: adios2.IO | None = None,
         parameters: dict[str, str] | None = None,
+        engine: str | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
         self._filename = filename_or_obj
-        self._state = FileState(filename_or_obj, io, parameters)
+        self._state = FileState(
+            filename_or_obj, io=io, parameters=parameters, engine=engine
+        )
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
             filename_or_obj
