@@ -45,7 +45,9 @@ def test_open_with_parameters():
 
 
 def test_open_with_engine():
-    with adios2py.File(pscpy.sample_dir / "pfd.000000400.bp", engine="BP4") as file:
+    with adios2py.File(
+        pscpy.sample_dir / "pfd.000000400.bp", engine_type="BP4"
+    ) as file:
         assert file.io.engine_type() == "BP4"
 
 

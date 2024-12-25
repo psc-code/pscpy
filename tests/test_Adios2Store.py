@@ -35,7 +35,7 @@ def test_open_with_parameters(test_store):
 
 def test_open_with_engine():
     with Adios2Store.open(
-        str(pscpy.sample_dir / "pfd.000000400.bp"), engine="BP4"
+        str(pscpy.sample_dir / "pfd.000000400.bp"), engine_type="BP4"
     ) as store:
         assert store.ds.io.engine_type() == "BP4"
 

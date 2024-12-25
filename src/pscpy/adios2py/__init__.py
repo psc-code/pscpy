@@ -180,7 +180,7 @@ class File:
         filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
         mode: str = "r",
         parameters: dict[str, str] | None = None,
-        engine: str | None = None,
+        engine_type: str | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
@@ -195,8 +195,8 @@ class File:
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
                 self.io.set_parameters(dict(parameters))
-            if engine is not None:
-                self.io.set_engine(engine)
+            if engine_type is not None:
+                self.io.set_engine(engine_type)
             self._engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
         self._reverse_dims = None

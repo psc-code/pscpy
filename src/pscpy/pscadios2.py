@@ -105,7 +105,7 @@ class Adios2Store(AbstractDataStore):
         mode: str = "r",
         lock: Lock | None = None,
         parameters: dict[str, str] | None = None,
-        engine: str | None = None,
+        engine_type: str | None = None,
     ) -> Adios2Store:
         if lock is None:
             if mode == "r":
@@ -116,8 +116,8 @@ class Adios2Store(AbstractDataStore):
         kwargs: dict[str, Any] = {}
         if parameters is not None:
             kwargs["parameters"] = tuple(sorted(parameters.items()))
-        if engine is not None:
-            kwargs["engine"] = engine
+        if engine_type is not None:
+            kwargs["engine_type"] = engine_type
         manager = CachingFileManager(adios2py.File, filename, mode=mode, kwargs=kwargs)
         return cls(manager, mode=mode, lock=lock)
 
