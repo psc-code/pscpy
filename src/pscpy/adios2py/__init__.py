@@ -273,11 +273,7 @@ class File:
             self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
-        return Variable(
-            variable_name,
-            self,
-            step=step,
-        )
+        return Variable(variable_name, self, step=step)
 
 
 class AttrsProxy(Mapping[str, Any]):
