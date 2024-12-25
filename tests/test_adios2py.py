@@ -26,7 +26,9 @@ def test_file(tmp_path):
 
 
 def test_open_close(pfd_file):
+    assert pfd_file  # is open
     pfd_file.close()
+    assert not pfd_file  # is closed
 
 
 def test_open_twice():

@@ -223,6 +223,9 @@ class File:
 
         self._update_variables_attributes()
 
+    def __bool__(self) -> bool:
+        return FileState.is_open(self._state)
+
     def _update_variables_attributes(self) -> None:
         self.variable_names: Collection[str] = self._io.available_variables().keys()
         self.attribute_names: Collection[str] = self._io.available_attributes().keys()
@@ -252,7 +255,7 @@ class File:
 
     def __del__(self) -> None:
         logger.debug("File.__del__()")
-        if FileState.is_open(self._state):
+        if self:  # is open?
             self.close()
 
     def close(self) -> None:
