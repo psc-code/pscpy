@@ -172,7 +172,7 @@ def _close_io(io: adios2.IO) -> None:
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _io_name: str | None
+    _own_io_engine: bool
     _io: adios2.IO | None
     _engine: adios2.Engine | None
 
@@ -188,11 +188,11 @@ class File:
         self._filename = filename_or_obj
 
         if isinstance(filename_or_obj, tuple):
-            self._io_name = None
+            self._own_io_engine = False
             self._io, self._engine = filename_or_obj
         else:
-            self._io_name, self._io = next(_generate_io)
-            logger.debug("io_name = %s", self._io_name)
+            self._own_io_engine = True
+            _, self._io = next(_generate_io)
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
                 self.io.set_parameters(dict(parameters))
@@ -251,7 +251,7 @@ class File:
         for var in self._open_vars.values():
             var.close()
 
-        if self._io_name:  # if we created the io/engine ourselves
+        if self._own_io_engine:  # if we created the io/engine ourselves
             self.engine.close()
             _close_io(self.io)
         self._engine = None
