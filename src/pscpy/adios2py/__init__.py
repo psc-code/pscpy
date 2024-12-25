@@ -11,7 +11,6 @@ from typing import Any, Iterable, SupportsInt
 import adios2  # type: ignore[import-untyped]
 import numpy as np
 from numpy.typing import NDArray
-from typing_extensions import TypeGuard
 
 logger = logging.getLogger(__name__)
 
@@ -200,14 +199,14 @@ class FileState:
         self.io = None
 
     @staticmethod
-    def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
-        return maybe_state is not None
+    def is_open(state: FileState) -> bool:
+        return state.engine is not None
 
 
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _state: FileState | None
+    _state: FileState
 
     def __init__(
         self,
@@ -265,23 +264,22 @@ class File:
             self.close()
 
     def close(self) -> None:
-        assert FileState.is_open(self._state)
+        assert self  # is_open
 
         logger.debug("File.close(): open vars %s", self._open_vars)
         for var in self._open_vars.values():
             var.close()
 
         self._state.close()
-        self._state = None
 
     @property
     def _engine(self) -> adios2.Engine:
-        assert FileState.is_open(self._state)
+        assert self
         return self._state.engine
 
     @property
     def _io(self) -> adios2.IO:
-        assert FileState.is_open(self._state)
+        assert self
         return self._state.io
 
     def num_steps(self) -> int:
