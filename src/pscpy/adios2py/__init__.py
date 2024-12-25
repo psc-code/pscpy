@@ -172,24 +172,9 @@ def _close_io(io: adios2.IO) -> None:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
-    def __init__(
-        self,
-        filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
-        parameters: dict[str, str] | tuple[tuple[str, str], ...] | None = None,
-        engine: str | None = None,
-    ) -> None:
-        if isinstance(filename_or_obj, tuple):
-            self.io, self.engine = filename_or_obj
-            self.io_name = None
-        else:
-            self.io_name, self.io = next(_generate_io)
-            logger.debug("io_name = %s", self.io_name)
-            if parameters is not None:
-                # CachingFileManager needs to pass something hashable, so convert back to dict
-                self.io.set_parameters(dict(parameters))
-            if engine is not None:
-                self.io.set_engine(engine)
-            self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
+    io: adios2.IO
+    io_name: str | None
+    engine: adios2.Engine
 
 
 class File:
@@ -207,7 +192,23 @@ class File:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
         self._filename = filename_or_obj
-        self._state = FileState(filename_or_obj, parameters=parameters, engine=engine)
+
+        self._state = FileState()
+        if isinstance(filename_or_obj, tuple):
+            self._state.io, self._state.engine = filename_or_obj
+            self._state.io_name = None
+        else:
+            self._state.io_name, self._state.io = next(_generate_io)
+            logger.debug("io_name = %s", self._state.io_name)
+            if parameters is not None:
+                # CachingFileManager needs to pass something hashable, so convert back to dict
+                self._state.io.set_parameters(dict(parameters))
+            if engine is not None:
+                self._state.io.set_engine(engine)
+            self._state.engine = self._io.open(
+                str(filename_or_obj), adios2.bindings.Mode.Read
+            )
+
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
             filename_or_obj
@@ -218,7 +219,7 @@ class File:
         self._update_variables_attributes()
 
     def __bool__(self) -> bool:
-        return self._state.engine is not None
+        return self._state.engine is not None and self._state.io is not None
 
     def _update_variables_attributes(self) -> None:
         self.variable_names: Collection[str] = self._io.available_variables().keys()
@@ -269,12 +270,12 @@ class File:
 
     @property
     def _engine(self) -> adios2.Engine:
-        assert self
+        assert self._state.engine
         return self._state.engine
 
     @property
     def _io(self) -> adios2.IO:
-        assert self
+        assert self._state.io
         return self._state.io
 
     def num_steps(self) -> int:
