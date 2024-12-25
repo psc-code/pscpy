@@ -26,14 +26,13 @@ class Variable:
         step: int | None = None,
     ) -> None:
         logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
-        self._name = name
         if not file.io.inquire_variable(name):
-            msg = f"Variable '{name}' not found"
+            msg = f"Variable '{name}' not found in {file}"
             raise ValueError(msg)
 
+        self._name = name
         self._file = file
         self.step = step
-
         self._reverse_dims = self._is_reverse_dims()
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
@@ -47,6 +46,8 @@ class Variable:
 
     @property
     def var(self) -> adios2.Variable:
+        self._assert_not_closed()
+
         var = self._file.io.inquire_variable(self._name)
         if not var:
             msg = f"Variable '{self._name}' not found"
@@ -63,23 +64,19 @@ class Variable:
 
     @property
     def shape(self) -> tuple[int, ...]:
-        self._assert_not_closed()
-
         return self._maybe_reverse(tuple(self.var.shape()))
 
     @property
     def name(self) -> str:
-        self._assert_not_closed()
-
         return self.var.name()  # type: ignore[no-any-return]
 
     @property
     def dtype(self) -> np.dtype[Any]:
-        self._assert_not_closed()
-
         return np.dtype(adios2.type_adios_to_numpy(self.var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
+        self._assert_not_closed()
+
         infos = self._file.engine.blocks_info(
             self.name, self._file.engine.current_step()
         )
