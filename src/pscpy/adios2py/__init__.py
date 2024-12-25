@@ -212,10 +212,9 @@ class File:
         return self._engine is not None and self._io is not None
 
     def keys(self) -> set[str]:
-        return set(self._variable_names)
+        return self.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def _update_variables_attributes(self) -> None:
-        self._variable_names: Collection[str] = self.io.available_variables().keys()
         self.attribute_names: Collection[str] = self.io.available_attributes().keys()
 
     def reset(self) -> None:
