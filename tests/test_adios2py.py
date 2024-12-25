@@ -72,7 +72,7 @@ def test_attrs_keys(pfd_file):
 def test_get_variable(pfd_file):
     var = pfd_file.get_variable("jeh")
     assert var.name == "jeh"
-    assert var.shape == (1, 128, 512, 9)
+    assert var.shape == (9, 512, 128, 1)
     assert var.dtype == np.float32
 
 
@@ -85,7 +85,7 @@ def test_variable_bool(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
         assert var
-        assert var.shape == (1, 128, 512, 9)
+        assert var.shape == (9, 512, 128, 1)
 
     assert not var
 
@@ -93,10 +93,10 @@ def test_variable_bool(pfd_file):
 def test_variable_shape(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
-        assert var.shape == (1, 128, 512, 9)
+        assert var.shape == (9, 512, 128, 1)
 
     with pytest.raises(ValueError, match="variable is closed"):
-        assert var.shape == (1, 128, 512, 9)
+        assert var.shape == (9, 512, 128, 1)
 
 
 def test_variable_name(pfd_file):
@@ -121,7 +121,7 @@ def test_variable_repr(pfd_file):
     with pfd_file:
         var = pfd_file.get_variable("jeh")
         assert (
-            repr(var) == f"{type(var)}(name=jeh, shape=(1, 128, 512, 9), dtype=float32"
+            repr(var) == f"{type(var)}(name=jeh, shape=(9, 512, 128, 1), dtype=float32"
         )
 
     assert repr(var) == f"{type(var)} (closed)"

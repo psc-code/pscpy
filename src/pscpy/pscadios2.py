@@ -166,7 +166,7 @@ class Adios2Store(AbstractDataStore):
         if "xr-dims" in attrs:
             dims: tuple[str, ...] = attrs["xr-dims"].split(";")
         elif data.ndim == 4:  # for psc compatibility
-            dims = ("x", "y", "z", f"comp_{var_name}")
+            dims = (f"comp_{var_name}", "z", "y", "x")
         else:  # if we have no info, not much we can do...
             dims = tuple(f"len_{dim}" for dim in data.shape)
         return xarray.Variable(dims, data, attrs)

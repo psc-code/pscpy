@@ -3,7 +3,6 @@ from __future__ import annotations
 import itertools
 import logging
 import os
-import pathlib
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any, Iterable, SupportsInt
@@ -22,7 +21,6 @@ class Variable:
         self,
         name: str,
         file: adios2.File,
-        reverse_dims: bool | None = None,
         step: int | None = None,
     ) -> None:
         logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
@@ -34,8 +32,6 @@ class Variable:
         self._file = file
         self._step = step
         self._reverse_dims = self._is_reverse_dims()
-        if reverse_dims is not None:
-            self._reverse_dims = reverse_dims
 
     def __bool__(self) -> bool:
         return bool(self._file)
@@ -198,12 +194,6 @@ class File:
                 self.io.set_engine(engine_type)
             self._engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
-        self._reverse_dims = None
-        if not isinstance(filename_or_obj, tuple) and pathlib.Path(
-            filename_or_obj
-        ).name.startswith(("pfd", "tfd")):
-            self._reverse_dims = True
-
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
 
@@ -286,7 +276,6 @@ class File:
         return Variable(
             variable_name,
             self,
-            self._reverse_dims,
             step=step,
         )
 
