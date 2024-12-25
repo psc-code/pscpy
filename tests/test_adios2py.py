@@ -129,7 +129,7 @@ def test_variable_repr(pfd_file):
 
 def test_variable_is_reverse_dims(pfd_file):
     var = pfd_file.get_variable("jeh")
-    assert not var.is_reverse_dims
+    assert not var._is_reverse_dims()
 
     # with adios2py.File(
     #     "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"

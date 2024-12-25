@@ -34,8 +34,7 @@ class Variable:
         self._file = file
         self.step = step
 
-        self.is_reverse_dims = self._is_reverse_dims()
-        self._reverse_dims = self.is_reverse_dims
+        self._reverse_dims = self._is_reverse_dims()
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
 
