@@ -4,7 +4,7 @@ import itertools
 import logging
 import os
 import pathlib
-from collections.abc import Collection, Generator
+from collections.abc import Generator
 from types import TracebackType
 from typing import Any, Iterable, SupportsInt
 
@@ -206,8 +206,6 @@ class File:
             self._reverse_dims = True
         self._open_vars: dict[tuple[str, int | None], Variable] = {}
 
-        self._update_variables_attributes()
-
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
 
@@ -218,15 +216,10 @@ class File:
     def attrs(self) -> AttrsProxy:
         return AttrsProxy(self)
 
-    def _update_variables_attributes(self) -> None:
-        self._attribute_names: Collection[str] = self.io.available_attributes().keys()
-
     def reset(self) -> None:
         for var in self._open_vars.values():
             var.close()
         self._open_vars.clear()
-
-        self._update_variables_attributes()
 
     def __repr__(self) -> str:
         return f"{type(self)}(filename='{self._filename}')"
@@ -327,4 +320,4 @@ class AttrsProxy:
         self._file = file
 
     def keys(self) -> set[str]:
-        return set(self._file._attribute_names)
+        return set(self._file.io.available_attributes().keys())
