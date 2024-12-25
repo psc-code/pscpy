@@ -27,8 +27,7 @@ class Variable:
     ) -> None:
         logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
         self._name = name
-        self._var = file.io.inquire_variable(name)
-        if self._var is None:
+        if not file.io.inquire_variable(name):
             msg = f"Variable '{name}' not found"
             raise ValueError(msg)
 
@@ -42,15 +41,18 @@ class Variable:
 
     def close(self) -> None:
         logger.debug("adios2py.Variable(name=%s) closed", self._name)
-        self._var = None
         self._file = None
 
     def __bool__(self) -> bool:
-        return bool(self._var)
+        return self._file is not None and bool(self._file)
 
     @property
     def var(self) -> adios2.Variable:
-        return self._var
+        var = self._file.io.inquire_variable(self._name)
+        if not var:
+            msg = f"Variable '{self._name}' not found"
+            raise ValueError(msg)
+        return var
 
     def _assert_not_closed(self) -> None:
         if not self:
@@ -65,9 +67,7 @@ class Variable:
     ) -> None:
         self._assert_not_closed()
 
-        self._var.set_selection(
-            (self._maybe_reverse(start), self._maybe_reverse(count))
-        )
+        self.var.set_selection((self._maybe_reverse(start), self._maybe_reverse(count)))
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -147,7 +147,7 @@ class Variable:
         )
 
         if self.step is not None:
-            self._var.set_step_selection([self.step, 1])
+            self.var.set_step_selection([self.step, 1])
 
         if len(sel_start) > 0:
             self._set_selection(sel_start, sel_count)
