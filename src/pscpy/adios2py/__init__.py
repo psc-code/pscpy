@@ -153,11 +153,10 @@ class Variable:
         return f"{type(self)}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
-def _io_generator(ad: adios2.Adios) -> Generator[tuple[str, adios2.IO]]:
+def _io_generator(ad: adios2.Adios) -> Generator[adios2.IO]:
     for io_count in itertools.count():
-        io_name = f"io-adios2py-{io_count}"
-        io = ad.declare_io(io_name)
-        yield io_name, io
+        io = ad.declare_io(f"io-adios2py-{io_count}")
+        yield io
 
 
 _ad = adios2.Adios()
@@ -192,7 +191,7 @@ class File:
             self._io, self._engine = filename_or_obj
         else:
             self._own_io_engine = True
-            _, self._io = next(_generate_io)
+            self._io = next(_generate_io)
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
                 self.io.set_parameters(dict(parameters))
