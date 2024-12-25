@@ -4,7 +4,7 @@ import itertools
 import logging
 import os
 import pathlib
-from collections.abc import Collection
+from collections.abc import Collection, Generator
 from types import TracebackType
 from typing import Any, Iterable, SupportsInt
 
@@ -154,11 +154,24 @@ class Variable:
         return f"{type(self)}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
 
 
+def _io_generator(ad: adios2.Adios) -> Generator[tuple[str, adios2.IO]]:
+    for io_count in itertools.count():
+        io_name = f"io-adios2py-{io_count}"
+        io = ad.declare_io(io_name)
+        yield io_name, io
+
+
+_ad = adios2.Adios()
+_generate_io = _io_generator(_ad)
+
+
+# TODO: It'd be nice to have some "io.close()" kind of functionality
+def _close_io(io: adios2.IO) -> None:
+    _ad.remove_io(io._name)
+
+
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
-
-    _ad = adios2.Adios()
-    _io_count = itertools.count()
 
     def __init__(
         self,
@@ -170,9 +183,8 @@ class FileState:
             self.io, self.engine = filename_or_obj
             self.io_name = None
         else:
-            self.io_name = f"io-adios2py-{next(self._io_count)}"
+            self.io_name, self.io = next(_generate_io)
             logger.debug("io_name = %s", self.io_name)
-            self.io = self._ad.declare_io(self.io_name)
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
                 self.io.set_parameters(dict(parameters))
@@ -181,9 +193,11 @@ class FileState:
             self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
     def close(self) -> None:
-        if self.io_name:
+        if self.io_name:  # if we created the io/engine, rather than having it passed in
             self.engine.close()
-            self._ad.remove_io(self.io_name)
+            _close_io(self.io)
+        self.engine = None
+        self.io = None
 
     @staticmethod
     def is_open(maybe_state: FileState | None) -> TypeGuard[FileState]:
