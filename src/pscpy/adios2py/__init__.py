@@ -173,8 +173,8 @@ class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
     _io_name: str | None
-    _io: adios2.IO
-    _engine: adios2.Engine
+    _io: adios2.IO | None
+    _engine: adios2.Engine | None
 
     def __init__(
         self,
