@@ -201,6 +201,11 @@ class File:
             self._reverse_dims = True
         self._open_vars: dict[tuple[str, int | None], Variable] = {}
 
+        self._update_variables_attributes()
+
+    def _update_variables_attributes(self) -> None:
+        assert FileState.is_open(self._state)
+
         self.variable_names: Collection[str] = (
             self._state.io.available_variables().keys()
         )
