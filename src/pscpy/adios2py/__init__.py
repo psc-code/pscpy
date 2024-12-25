@@ -20,12 +20,18 @@ class Variable:
 
     def __init__(
         self,
-        var: adios2.Variable,
+        name: str,
         file: adios2.File,
         reverse_dims: bool | None = None,
         step: int | None = None,
     ) -> None:
-        self._var = var
+        logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
+        self._name = name
+        self._var = file.io.inquire_variable(name)
+        if self._var is None:
+            msg = f"Variable '{name}' not found"
+            raise ValueError(msg)
+
         self._file = file
         self.step = step
 
@@ -33,7 +39,6 @@ class Variable:
         self._reverse_dims = self.is_reverse_dims
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
-        logger.debug("Variable.__init__(var=%s, file=%s)", var, file)
 
     def close(self) -> None:
         logger.debug("adios2py.variable close")
@@ -294,12 +299,8 @@ class File:
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
         if (variable_name, step) not in self._open_vars:
-            adios2_var = self.io.inquire_variable(variable_name)
-            if adios2_var is None:
-                msg = f"Variable '{variable_name}' not found"
-                raise ValueError(msg)
             var = Variable(
-                adios2_var,
+                variable_name,
                 self,
                 self._reverse_dims,
                 step=step,
