@@ -32,17 +32,13 @@ class Variable:
 
         self._name = name
         self._file = file
-        self.step = step
+        self._step = step
         self._reverse_dims = self._is_reverse_dims()
         if reverse_dims is not None:
             self._reverse_dims = reverse_dims
 
-    def close(self) -> None:
-        logger.debug("adios2py.Variable(name=%s) closed", self._name)
-        self._file = None
-
     def __bool__(self) -> bool:
-        return self._file is not None and bool(self._file)
+        return bool(self._file)
 
     @property
     def var(self) -> adios2.Variable:
@@ -132,12 +128,12 @@ class Variable:
             arr_shape,
             sel_start,
             sel_count,
-            self.step,
+            self._step,
         )
 
         var = self.var
-        if self.step is not None:
-            var.set_step_selection([self.step, 1])
+        if self._step is not None:
+            var.set_step_selection([self._step, 1])
 
         if len(sel_start) > 0:
             var.set_selection(
@@ -207,7 +203,6 @@ class File:
             filename_or_obj
         ).name.startswith(("pfd", "tfd")):
             self._reverse_dims = True
-        self._open_vars: dict[tuple[str, int | None], Variable] = {}
 
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
@@ -220,9 +215,7 @@ class File:
         return AttrsProxy(self)
 
     def reset(self) -> None:
-        for var in self._open_vars.values():
-            var.close()
-        self._open_vars.clear()
+        pass
 
     def __repr__(self) -> str:
         return f"{type(self)}(filename='{self._filename}')"
@@ -247,10 +240,6 @@ class File:
 
     def close(self) -> None:
         assert self  # is_open
-
-        logger.debug("File.close(): open vars %s", self._open_vars)
-        for var in self._open_vars.values():
-            var.close()
 
         if self._own_io_engine:  # if we created the io/engine ourselves
             self.engine.close()
@@ -294,17 +283,12 @@ class File:
             self.end_step()
 
     def get_variable(self, variable_name: str, step: int | None = None) -> Variable:
-        if (variable_name, step) not in self._open_vars:
-            var = Variable(
-                variable_name,
-                self,
-                self._reverse_dims,
-                step=step,
-            )
-            self._open_vars[(variable_name, step)] = var
-            return var
-
-        return self._open_vars[(variable_name, step)]
+        return Variable(
+            variable_name,
+            self,
+            self._reverse_dims,
+            step=step,
+        )
 
     def get_attribute(self, attribute_name: str) -> Any:
         attr = self.io.inquire_attribute(attribute_name)
