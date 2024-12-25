@@ -175,6 +175,11 @@ class Adios2Store(AbstractDataStore):
     def get_dimensions(self) -> Never:
         raise NotImplementedError()
 
+    @override
+    def load(self):  # type: ignore[no-untyped-def]
+        self._var_attrs = set()
+        return super().load()  # type:ignore[no-untyped-call]
+
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
     """Entrypoint that lets xarray recognize and read adios2 output."""
