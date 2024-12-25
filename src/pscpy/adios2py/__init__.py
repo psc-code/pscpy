@@ -191,13 +191,6 @@ class FileState:
                 self.io.set_engine(engine)
             self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
-    def close(self) -> None:
-        if self.io_name:  # if we created the io/engine, rather than having it passed in
-            self.engine.close()
-            _close_io(self.io)
-        self.engine = None
-        self.io = None
-
 
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
@@ -266,7 +259,13 @@ class File:
         for var in self._open_vars.values():
             var.close()
 
-        self._state.close()
+        if (
+            self._state.io_name
+        ):  # if we created the io/engine, rather than having it passed in
+            self._engine.close()
+            _close_io(self._io)
+        self._state.engine = None
+        self._state.io = None
 
     @property
     def _engine(self) -> adios2.Engine:
