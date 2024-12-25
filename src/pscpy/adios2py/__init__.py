@@ -198,10 +198,6 @@ class FileState:
         self.engine = None
         self.io = None
 
-    @staticmethod
-    def is_open(state: FileState) -> bool:
-        return state.engine is not None
-
 
 class File:
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
@@ -229,7 +225,7 @@ class File:
         self._update_variables_attributes()
 
     def __bool__(self) -> bool:
-        return FileState.is_open(self._state)
+        return self._state.engine is not None
 
     def _update_variables_attributes(self) -> None:
         self.variable_names: Collection[str] = self._io.available_variables().keys()
