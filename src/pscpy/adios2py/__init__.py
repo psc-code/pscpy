@@ -62,13 +62,6 @@ class Variable:
     def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
         return dims[::-1] if self._reverse_dims else dims
 
-    def _set_selection(
-        self, start: NDArray[np.integer[Any]], count: NDArray[np.integer[Any]]
-    ) -> None:
-        self._assert_not_closed()
-
-        self.var.set_selection((self._maybe_reverse(start), self._maybe_reverse(count)))
-
     @property
     def shape(self) -> tuple[int, ...]:
         self._assert_not_closed()
@@ -146,15 +139,18 @@ class Variable:
             self.step,
         )
 
+        var = self.var
         if self.step is not None:
-            self.var.set_step_selection([self.step, 1])
+            var.set_step_selection([self.step, 1])
 
         if len(sel_start) > 0:
-            self._set_selection(sel_start, sel_count)
+            var.set_selection(
+                (self._maybe_reverse(sel_start), self._maybe_reverse(sel_count))
+            )
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        self._file.engine.get(self.var, arr, adios2.bindings.Mode.Sync)
+        self._file.engine.get(var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
