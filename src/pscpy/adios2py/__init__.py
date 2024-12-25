@@ -164,6 +164,7 @@ class FileState:
         self,
         filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
         io: adios2.IO | None = None,
+        parameters: dict[str, str] | None = None,
     ) -> None:
         if isinstance(filename_or_obj, tuple):
             self.io, self.engine = filename_or_obj
@@ -176,6 +177,8 @@ class FileState:
             else:
                 self.io_name = None
                 self.io = io
+            if parameters is not None:
+                self.io.set_parameters(parameters)
             self.engine = self.io.open(str(filename_or_obj), adios2.bindings.Mode.Read)
 
     def close(self) -> None:
@@ -198,11 +201,12 @@ class File:
         filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
         mode: str = "r",
         io: adios2.IO | None = None,
+        parameters: dict[str, str] | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         assert mode == "r"
         self._filename = filename_or_obj
-        self._state = FileState(filename_or_obj, io)
+        self._state = FileState(filename_or_obj, io, parameters)
         self._reverse_dims = None
         if not isinstance(filename_or_obj, tuple) and pathlib.Path(
             filename_or_obj
