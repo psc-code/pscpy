@@ -213,6 +213,13 @@ class File:
             self._state.io.available_attributes().keys()
         )
 
+    def reset(self) -> None:
+        for var in self._open_vars.values():
+            var.close()
+        self._open_vars.clear()
+
+        self._update_variables_attributes()
+
     def __repr__(self) -> str:
         assert FileState.is_open(self._state)
         return f"{type(self)}(filename='{self._filename}')"
@@ -255,7 +262,10 @@ class File:
 
     def begin_step(self) -> adios2.StepStatus:
         assert FileState.is_open(self._state)
-        return self._state.engine.begin_step()
+        status = self._state.engine.begin_step()
+        if status == adios2.bindings.StepStatus.OK:
+            self.reset()
+        return status
 
     def end_step(self) -> None:
         assert FileState.is_open(self._state)
