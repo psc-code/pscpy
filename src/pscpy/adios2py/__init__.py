@@ -172,7 +172,6 @@ def _close_io(io: adios2.IO) -> None:
 class FileState:
     """Collects the state of a `File` to reflect the fact that they are coupled."""
 
-    io: adios2.IO
     engine: adios2.Engine
 
 
@@ -181,6 +180,7 @@ class File:
 
     _state: FileState
     _io_name: str | None
+    _io: adios2.IO
 
     def __init__(
         self,
@@ -196,9 +196,9 @@ class File:
         self._state = FileState()
         if isinstance(filename_or_obj, tuple):
             self._io_name = None
-            self._state.io, self._state.engine = filename_or_obj
+            self._io, self._state.engine = filename_or_obj
         else:
-            self._io_name, self._state.io = next(_generate_io)
+            self._io_name, self._io = next(_generate_io)
             logger.debug("io_name = %s", self._io_name)
             if parameters is not None:
                 # CachingFileManager needs to pass something hashable, so convert back to dict
@@ -219,7 +219,7 @@ class File:
         self._update_variables_attributes()
 
     def __bool__(self) -> bool:
-        return self._state.engine is not None and self._state.io is not None
+        return self._state.engine is not None and self._io is not None
 
     def _update_variables_attributes(self) -> None:
         self.variable_names: Collection[str] = self.io.available_variables().keys()
@@ -264,7 +264,7 @@ class File:
             self.engine.close()
             _close_io(self.io)
         self._state.engine = None
-        self._state.io = None
+        self._io = None
 
     @property
     def engine(self) -> adios2.Engine:
@@ -273,8 +273,8 @@ class File:
 
     @property
     def io(self) -> adios2.IO:
-        assert self._state.io
-        return self._state.io
+        assert self._io
+        return self._io
 
     def num_steps(self) -> int:
         return self.engine.steps()  # type: ignore[no-any-return]
