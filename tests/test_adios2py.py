@@ -243,6 +243,14 @@ def test_read_adios2py(test_filename, mode):
         assert n == 4
 
 
+def test_read_rra_step(test_filename):
+    with adios2py.File(test_filename, mode="rra") as file:
+        for n, step in enumerate(file.steps()):
+            scalar = step.get_variable("scalar", step=n)[()]
+            assert scalar == n
+        assert n == 4
+
+
 def test_read_streaming_adios2py_mixed(test_file):
     test_file.begin_step()
     assert test_file.get_variable("scalar")[()] == 0
