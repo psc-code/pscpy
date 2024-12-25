@@ -293,3 +293,6 @@ class AttrsProxy:
             return attr.data_string()
 
         return attr.data()
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.keys()

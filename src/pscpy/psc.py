@@ -11,7 +11,7 @@ from .adios2py import File
 def _get_array_attribute(
     file: File, attribute_name: str, default: ArrayLike | None
 ) -> NDArray[np.floating[Any]]:
-    if attribute_name in file.attrs.keys():  # noqa: SIM118
+    if attribute_name in file.attrs:
         return np.asarray(file.attrs[attribute_name])
     if default is not None:
         return np.asarray(default)

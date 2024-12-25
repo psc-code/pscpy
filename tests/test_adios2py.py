@@ -69,6 +69,11 @@ def test_attrs_keys(pfd_file):
     assert pfd_file.attrs.keys() == set({"ib", "im", "step", "time"})
 
 
+def test_attrs_contains(pfd_file):
+    assert "ib" in pfd_file.attrs
+    assert "ix" not in pfd_file.attrs
+
+
 def test_get_variable(pfd_file):
     var = pfd_file.get_variable("jeh")
     assert var.name == "jeh"
