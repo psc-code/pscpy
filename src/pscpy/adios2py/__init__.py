@@ -280,16 +280,8 @@ class Group(Mapping[str, Any]):
             raise ValueError(msg)
         return self._state
 
-    @property
-    def engine(self) -> adios2.Engine:
-        return self.state.engine
-
-    @property
-    def io(self) -> adios2.IO:
-        return self.state.io
-
     def _keys(self) -> set[str]:
-        return self.io.available_variables().keys()  # type: ignore[no-any-return]
+        return self.state.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
         if self.state.mode == "r":
@@ -370,7 +362,7 @@ class AttrsProxy(Mapping[str, Any]):
         self._file = file
 
     def __getitem__(self, name: str) -> Any:
-        attr = self._file.io.inquire_attribute(name)
+        attr = self._file.state.io.inquire_attribute(name)
         if not attr:
             raise KeyError()
 
@@ -386,7 +378,7 @@ class AttrsProxy(Mapping[str, Any]):
         yield from self._keys()
 
     def _keys(self) -> set[str]:
-        return set(self._file.io.available_attributes().keys())
+        return set(self._file.state.io.available_attributes().keys())
 
 
 class StepsProxy(Iterable[Step]):
