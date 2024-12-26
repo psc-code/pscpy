@@ -50,7 +50,7 @@ class Variable:
     def _assert_not_closed(self) -> None:
         if not self:
             error_message = "adios2py: variable is closed"
-            raise ValueError(error_message)
+            raise KeyError(error_message)
 
     def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
         return dims[::-1] if self._reverse_dims else dims
