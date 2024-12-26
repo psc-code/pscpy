@@ -318,7 +318,7 @@ class File(Group):
 
     @property
     def attrs(self) -> AttrsProxy:
-        return AttrsProxy(self)
+        return AttrsProxy(self._state)
 
     def __repr__(self) -> str:
         return f"adios2py.File(state={self._state})"
@@ -350,9 +350,8 @@ class File(Group):
 
 
 class AttrsProxy(Mapping[str, Any]):
-    def __init__(self, file: File) -> None:
-        self._file = file
-        self._state = file._state
+    def __init__(self, state: FileState) -> None:
+        self._state = state
 
     def __getitem__(self, name: str) -> Any:
         attr = self._state.io.inquire_attribute(name)
