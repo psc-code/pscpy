@@ -263,7 +263,7 @@ def test_read_streaming_adios2py_next(test_file):
         scalar = step["scalar"][()]
         assert step.step() == n + 1
         assert scalar == n + 1
-    assert test_file.current_step() == 4
+    assert n == 3
 
 
 @pytest.mark.parametrize("mode", ["rra", pytest.param("r", marks=pytest.mark.xfail)])

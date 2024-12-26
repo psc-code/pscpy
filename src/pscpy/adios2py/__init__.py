@@ -349,9 +349,6 @@ class File(Group):
     def close(self) -> None:
         self._state.close()
 
-    def current_step(self) -> int:
-        return self.engine.current_step()  # type: ignore[no-any-return]
-
     @property
     def steps(self) -> StepsProxy:
         return StepsProxy(self._state)
