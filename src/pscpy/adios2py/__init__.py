@@ -21,36 +21,42 @@ class Variable:
     def __init__(
         self,
         name: str,
-        file: adios2.File,
+        state: FileState,
         step: int | None = None,
     ) -> None:
-        logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
-        if not file.io.inquire_variable(name):
-            msg = f"Variable '{name}' not found in {file}"
+        logger.debug("Variable.__init__(name=%s, state=%s)", name, state)
+        if not state.io.inquire_variable(name):
+            msg = f"Variable '{name}' not found in {state}"
             raise KeyError(msg)
 
         self._name = name
-        self._file = file
+        self._state = state
         self._step = step
         self._reverse_dims = self._is_reverse_dims()
 
+    @property
+    def state(self) -> FileState:
+        if not self._state:
+            msg = f"Variable('name={self._name}, step={self._step}) is closed."
+            raise KeyError(msg)
+        return self._state
+
     def __bool__(self) -> bool:
-        return bool(self._file)
+        if not self._state:  # file closed?
+            return False
+
+        if self.state.mode == "rra" or self._step is None:
+            return True
+
+        return bool(self._step == self.state.current_step())
 
     @property
     def var(self) -> adios2.Variable:
-        self._assert_not_closed()
-
-        var = self._file.io.inquire_variable(self._name)
+        var = self.state.io.inquire_variable(self._name)
         if not var:
             msg = f"Variable '{self._name}' not found"
             raise ValueError(msg)
         return var
-
-    def _assert_not_closed(self) -> None:
-        if not self:
-            error_message = "adios2py: variable is closed"
-            raise KeyError(error_message)
 
     def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
         return dims[::-1] if self._reverse_dims else dims
@@ -68,11 +74,8 @@ class Variable:
         return np.dtype(adios2.type_adios_to_numpy(self.var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
-        self._assert_not_closed()
-
-        infos = self._file.engine.blocks_info(
-            self.name, self._file.engine.current_step()
-        )
+        step = self.state.current_step() or 0
+        infos = self.state.engine.blocks_info(self.name, step)
         return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
     def __array__(self) -> np.ndarray[Any, Any]:
@@ -81,8 +84,6 @@ class Variable:
     def __getitem__(
         self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
     ) -> NDArray[Any]:
-        self._assert_not_closed()
-
         if not isinstance(args, tuple):
             args = (args,)
 
@@ -130,12 +131,12 @@ class Variable:
 
         var = self.var
         if self._step is not None:
-            if self._file._state.mode == "rra":
+            if self.state.mode == "rra":
                 var.set_step_selection([self._step, 1])
-            elif self._step != self._file._state.current_step():
+            elif self._step != self.state.current_step():
                 msg = (
                     f"cannot access step {self._step} in streaming mode, "
-                    f"current_step = {self._file._state.current_step()}"
+                    f"current_step = {self.state.current_step()}"
                 )
                 raise KeyError(msg)
 
@@ -146,7 +147,7 @@ class Variable:
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        self._file.engine.get(var, arr, adios2.bindings.Mode.Sync)
+        self.state.engine.get(var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
@@ -285,10 +286,10 @@ class Group(Mapping[str, Any]):
 
     def __getitem__(self, name: str) -> Variable:
         if self._state.mode == "r":
-            return Variable(name, self)
+            return Variable(name, self._state)
 
         assert self._state.mode == "rra"
-        return Variable(name, self)
+        return Variable(name, self._state)
 
     def __len__(self) -> int:
         return len(self._keys())
@@ -303,7 +304,7 @@ class Step(Group):
         self._step = step
 
     def __getitem__(self, name: str) -> Variable:
-        return Variable(name, self, step=self._step)
+        return Variable(name, self._state, step=self._step)
 
     def step(self) -> int:
         return self._step
