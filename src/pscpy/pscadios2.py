@@ -128,7 +128,7 @@ class Adios2Store(AbstractDataStore):
         lock: Lock | None = None,
         step: int | None = None,
     ) -> Adios2Store:
-        assert mode == "r"
+        assert mode in ("r", "rra")
         if lock is None:
             lock = ADIOS2_LOCK
 
