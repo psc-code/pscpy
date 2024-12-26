@@ -62,3 +62,13 @@ def test_vars_attrs(test_store):
     assert vars.keys() == set({"scalar", "arr1d"})
     assert attrs == {}
     test_store.ds.end_step()
+
+
+def test_rra(test_filename):
+    with Adios2Store.open(test_filename, mode="rra") as store:
+        vars, _ = store.load()
+        assert vars["scalar"] == 0
+
+        store.set_step(3)
+        vars, _ = store.load()
+        assert vars["scalar"] == 3
