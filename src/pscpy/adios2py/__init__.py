@@ -178,6 +178,7 @@ class FileState:
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
     _step_status: adios2.bindings.StepStatus | None = None
+    _step: int = -1
 
     def __init__(
         self,
@@ -234,12 +235,19 @@ class FileState:
         if self._step_status != adios2.bindings.StepStatus.OK:
             msg = f"adios2 StepStatus = {self._step_status}"
             raise RuntimeError(msg)
+        self._step += 1
         return self._step_status
 
     def end_step(self) -> None:
         assert self._step_status == adios2.bindings.StepStatus.OK
         self.engine.end_step()
         self._step_status = None
+
+    def current_step(self) -> int | None:
+        if self._step_status is None:
+            return None
+        assert self._step == self.engine.current_step()
+        return self._step
 
     def __repr__(self) -> str:
         if not self:
