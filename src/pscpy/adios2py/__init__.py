@@ -163,7 +163,7 @@ def _close_io(io: adios2.IO) -> None:
     _ad.remove_io(io._name)
 
 
-class File:
+class File(Mapping[str, Any]):
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
     _own_io_engine: bool = False
@@ -205,9 +205,6 @@ class File:
 
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
-
-    def keys(self) -> set[str]:
-        return self.io.available_variables().keys()  # type: ignore[no-any-return]
 
     @property
     def attrs(self) -> AttrsProxy:
@@ -289,12 +286,21 @@ class File:
     def set_step(self, step: int | None) -> None:
         self._step = step
 
+    def _keys(self) -> set[str]:
+        return self.io.available_variables().keys()  # type: ignore[no-any-return]
+
     def __getitem__(self, name: str) -> Variable:
         if self._mode == "r":
             return Variable(name, self)
 
         assert self._mode == "rra"
         return Variable(name, self, step=self._step)
+
+    def __len__(self) -> int:
+        return len(self._keys())
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._keys()
 
 
 class AttrsProxy(Mapping[str, Any]):
