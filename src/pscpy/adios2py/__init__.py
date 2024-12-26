@@ -340,21 +340,6 @@ class File(Group):
     def steps(self) -> StepsProxy:
         return StepsProxy(self)
 
-    def set_step(self, step: int | None) -> None:
-        if self._state.mode != "rra" and step is not None:
-            # FIXME? we could accept this if step == current_step, or even > current_step
-            msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
-            raise TypeError(msg)
-
-        self._step = step
-
-    def __getitem__(self, name: str) -> Variable:
-        if self._state.mode == "r":
-            return Variable(name, self)
-
-        assert self._state.mode == "rra"
-        return Variable(name, self, step=self._step)
-
 
 class AttrsProxy(Mapping[str, Any]):
     def __init__(self, file: File) -> None:
