@@ -166,7 +166,6 @@ def _close_io(io: adios2.IO) -> None:
 class File(Mapping[str, Any]):
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _own_io_engine: bool = False
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
     _step: int | None = None
@@ -183,7 +182,6 @@ class File(Mapping[str, Any]):
         self._mode = mode
         self._filename = filename_or_obj
 
-        self._own_io_engine = True
         self._io = next(_generate_io)
         if parameters is not None:
             # CachingFileManager needs to pass something hashable, so convert back to dict
@@ -230,9 +228,8 @@ class File(Mapping[str, Any]):
     def close(self) -> None:
         assert self  # is_open
 
-        if self._own_io_engine:  # if we created the io/engine ourselves
-            self.engine.close()
-            _close_io(self.io)
+        self.engine.close()
+        _close_io(self.io)
         self._engine = None
         self._io = None
 
