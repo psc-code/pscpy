@@ -12,7 +12,7 @@ import pscpy
 # from pscpy.pscadios2 import Adios2Store
 
 
-def _open_dataset(filename: os.Pathlike[Any]) -> xr.Dataset:
+def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
     return xr.open_dataset(
         filename,
         species_names=["e", "i"],
