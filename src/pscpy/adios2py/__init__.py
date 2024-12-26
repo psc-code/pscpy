@@ -4,6 +4,7 @@ import itertools
 import logging
 import os
 from collections.abc import Generator, Mapping
+from contextlib import contextmanager
 from types import TracebackType
 from typing import Any, Iterable, Iterator, SupportsInt
 
@@ -405,7 +406,7 @@ class StepsProxy(Iterable[Step]):
             for n in range(len(self)):
                 yield self[n]
 
-    def __getitem__(self, step: int) -> Step:
+    def __getitem__(self, step: int | None) -> Step:
         if self.file._state.mode != "rra" and step is not None:
             # FIXME? we could accept this if step == current_step, or even > current_step
             msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
@@ -415,3 +416,11 @@ class StepsProxy(Iterable[Step]):
 
     def __len__(self) -> int:
         return self.file.engine.steps()  # type: ignore[no-any-return]
+
+    @contextmanager
+    def next(self) -> Generator[Step]:
+        try:
+            self.file._state.begin_step()
+            yield self[None]
+        finally:
+            self.file._state.end_step()

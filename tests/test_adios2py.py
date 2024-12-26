@@ -236,16 +236,29 @@ def test_read_adios2py(test_filename, mode):
         assert n == 4
 
 
-def test_read_streaming_adios2py_mixed(test_file):
+def test_read_streaming_adios2py_resume(test_file):
     # do 0th iteration
     for step in test_file.steps:
         scalar = test_file["scalar"][()]
         assert scalar == step.current_step()
         break
 
-    # then the rest separately
+    # then do the rest separately
     for step in test_file.steps:
         scalar = test_file["scalar"][()]
+        assert scalar == step.current_step()
+    assert test_file.current_step() == 4
+
+
+def test_read_streaming_adios2py_next(test_file):
+    # do 0th iteration
+    with test_file.steps.next() as step:
+        scalar = step["scalar"][()]
+        assert scalar == 0
+
+    # then do the rest separately
+    for step in test_file.steps:
+        scalar = step["scalar"][()]
         assert scalar == step.current_step()
     assert test_file.current_step() == 4
 
