@@ -8,8 +8,9 @@ import pscpy
 from pscpy.pscadios2 import Adios2Store
 
 
+# FIXME, duplicated
 @pytest.fixture
-def test_store(tmp_path):
+def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
     with adios2.Stream(str(filename), mode="w") as file:
         for step, _ in enumerate(file.steps(5)):
@@ -17,7 +18,12 @@ def test_store(tmp_path):
             arr1d = np.arange(10)
             file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
 
-    return Adios2Store.open(filename, mode="r")
+    return filename
+
+
+@pytest.fixture
+def test_store(test_filename):
+    return Adios2Store.open(test_filename, mode="r")
 
 
 def test_open_close(test_store):
