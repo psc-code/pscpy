@@ -237,7 +237,7 @@ def test_read_streaming_adios2_step_persist(tmp_path):
 @pytest.mark.parametrize("mode", ["r", "rra"])
 def test_read_adios2py(test_filename, mode):
     with adios2py.File(test_filename, mode=mode) as file:
-        for n, step in enumerate(file.steps()):
+        for n, step in enumerate(file.steps):
             scalar = step["scalar"][()]
             assert scalar == n
         assert n == 4
@@ -248,7 +248,7 @@ def test_read_streaming_adios2py_mixed(test_file):
     assert test_file["scalar"][()] == 0
     test_file.end_step()
 
-    for step in test_file.steps():
+    for step in test_file.steps:
         scalar = test_file["scalar"][()]
         assert scalar == step.current_step()
     assert test_file.current_step() == 4
@@ -257,7 +257,7 @@ def test_read_streaming_adios2py_mixed(test_file):
 @pytest.mark.xfail
 def test_read_adios2py_step_persist(test_filename):
     with adios2py.File(test_filename, mode="r") as file:
-        for n, step in enumerate(file.steps()):
+        for n, step in enumerate(file.steps):
             if n == 1:
                 step1 = step
 
@@ -267,7 +267,7 @@ def test_read_adios2py_step_persist(test_filename):
 @pytest.mark.xfail
 def test_read_adios2py_var_persist_r(test_filename):
     with adios2py.File(test_filename, mode="r") as file:
-        for n, step in enumerate(file.steps()):
+        for n, step in enumerate(file.steps):
             if n == 1:
                 var1 = step["scalar"]
 
@@ -276,7 +276,7 @@ def test_read_adios2py_var_persist_r(test_filename):
 
 def test_read_adios2py_var_persist_rra(test_filename):
     with adios2py.File(test_filename, mode="rra") as file:
-        for n, step in enumerate(file.steps()):
+        for n, step in enumerate(file.steps):
             if n == 1:
                 var1 = step["scalar"]
 

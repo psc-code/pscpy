@@ -258,20 +258,9 @@ class File(Mapping[str, Any]):
     def end_step(self) -> None:
         return self.engine.end_step()  # type: ignore[no-any-return]
 
-    def steps(self) -> Iterable[File]:
-        if self._mode == "r":
-            while True:
-                status = self.begin_step()
-                if status == adios2.bindings.StepStatus.EndOfStream:
-                    break
-                assert status == adios2.bindings.StepStatus.OK
-
-                yield self
-                self.end_step()
-        elif self._mode == "rra":
-            for step in range(self.num_steps()):
-                self.set_step(step)
-                yield self
+    @property
+    def steps(self) -> StepsProxy:
+        return StepsProxy(self)
 
     def set_step(self, step: int | None) -> None:
         self._step = step
@@ -315,3 +304,32 @@ class AttrsProxy(Mapping[str, Any]):
 
     def _keys(self) -> set[str]:
         return set(self._file.io.available_attributes().keys())
+
+
+class StepsProxy(Iterable[File]):
+    _file: File | None
+
+    def __init__(self, file: File) -> None:
+        self._file = file
+
+    @property
+    def file(self) -> File:
+        assert self._file
+        return self._file
+
+    def __iter__(self) -> Iterator[File]:
+        # FIXME, should prevent giving out more than one iterator at a time in streaming mode
+        file = self.file
+        if file._mode == "r":
+            while True:
+                status = file.begin_step()
+                if status == adios2.bindings.StepStatus.EndOfStream:
+                    break
+                assert status == adios2.bindings.StepStatus.OK
+
+                yield file
+                file.end_step()
+        elif file._mode == "rra":
+            for step in range(file.num_steps()):
+                file.set_step(step)
+                yield file
