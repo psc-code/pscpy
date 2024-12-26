@@ -154,7 +154,7 @@ def test_variable_is_reverse_dims(pfd_file):
 def test_variable_getitem_scalar(test_file):
     for step in test_file.steps:
         var = step["scalar"]
-        assert var[()] == step.current_step()
+        assert var[()] == step.step()
 
 
 def test_variable_getitem_arr1d(test_file):
@@ -188,7 +188,7 @@ def test_variable_getitem_arr1d_indexing_reverse(test_file):
 def test_variable_array(test_file):
     for step in test_file.steps:
         scalar = np.asarray(step["scalar"])
-        assert np.array_equal(scalar, step.current_step())
+        assert np.array_equal(scalar, step.step())
         arr1d = np.asarray(step["arr1d"])
         assert np.array_equal(arr1d, np.arange(10))
 
@@ -240,14 +240,16 @@ def test_read_streaming_adios2py_resume(test_file):
     # do 0th iteration
     for step in test_file.steps:
         scalar = test_file["scalar"][()]
-        assert scalar == step.current_step()
+        assert step.step() == 0
+        assert scalar == 0
         break
 
     # then do the rest separately
-    for step in test_file.steps:
+    for n, step in enumerate(test_file.steps):
         scalar = test_file["scalar"][()]
-        assert scalar == step.current_step()
-    assert test_file.current_step() == 4
+        assert step.step() == n + 1
+        assert scalar == n + 1
+    assert n == 3
 
 
 def test_read_streaming_adios2py_next(test_file):
@@ -257,9 +259,10 @@ def test_read_streaming_adios2py_next(test_file):
         assert scalar == 0
 
     # then do the rest separately
-    for step in test_file.steps:
+    for n, step in enumerate(test_file.steps):
         scalar = step["scalar"][()]
-        assert scalar == step.current_step()
+        assert step.step() == n + 1
+        assert scalar == n + 1
     assert test_file.current_step() == 4
 
 

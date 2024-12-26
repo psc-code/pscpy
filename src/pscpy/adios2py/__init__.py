@@ -291,9 +291,7 @@ class Group(Mapping[str, Any]):
 
 
 class Step(Group):
-    _step: int | None
-
-    def __init__(self, state: FileState, step: int | None) -> None:
+    def __init__(self, state: FileState, step: int) -> None:
         super().__init__(state)
         self._step = step
 
@@ -304,9 +302,8 @@ class Step(Group):
         assert self._state.mode == "rra"
         return Variable(name, self, step=self._step)
 
-    def current_step(self) -> int:
-        assert self._step is None or self._step == self._state.engine.current_step()
-        return self._state.engine.current_step()  # type: ignore[no-any-return]
+    def step(self) -> int:
+        return self._step
 
 
 class File(Group):
@@ -409,10 +406,9 @@ class StepsProxy(Iterable[Step]):
             for n in range(len(self)):
                 yield self[n]
 
-    def __getitem__(self, step: int | None) -> Step:
-        if self.file._state.mode != "rra" and step is not None:
-            # FIXME? we could accept this if step == current_step, or even > current_step
-            msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
+    def __getitem__(self, step: int) -> Step:
+        if self.file._state.mode != "rra" and step != self.file._state.current_step():
+            msg = f"Failed to get steps({step} in streaming mode."
             raise TypeError(msg)
 
         return Step(self.file._state, step)
@@ -425,7 +421,9 @@ class StepsProxy(Iterable[Step]):
         status = None
         try:
             status = self.file._state.begin_step()
-            yield self[None]
+            step = self.file._state.current_step()
+            assert step is not None
+            yield self[step]
         finally:
             if status == adios2.bindings.StepStatus.OK:
                 self.file._state.end_step()
