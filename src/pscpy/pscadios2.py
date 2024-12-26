@@ -88,14 +88,13 @@ class Adios2Store(AbstractDataStore):
         manager: FileManager,
         mode: str | None = None,
         lock: Lock = ADIOS2_LOCK,
-        step: int | None = None,
     ) -> None:
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
         # keep track of attributes that belong with a variable
         self._var_attrs: set[str] = set()
-        self._step = step
+        self._step: int | None = None
 
     @classmethod
     def open(
@@ -165,6 +164,9 @@ class Adios2Store(AbstractDataStore):
     def load(self):  # type: ignore[no-untyped-def]
         self._var_attrs = set()
         return super().load()  # type:ignore[no-untyped-call]
+
+    def set_step(self, step: int) -> None:
+        self._step = step
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
