@@ -252,7 +252,7 @@ def test_read_streaming_adios2py_resume(test_file):
 
 def test_read_streaming_adios2py_next(test_file):
     # do 0th iteration
-    with test_file.steps.next() as step:
+    with next(test_file.steps) as step:
         scalar = step["scalar"][()]
         assert scalar == 0
 

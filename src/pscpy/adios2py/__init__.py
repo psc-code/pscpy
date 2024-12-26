@@ -393,7 +393,7 @@ class StepsProxy(Iterable[Step]):
         if file._state.mode == "r":
             try:
                 while True:
-                    with self.next() as step:
+                    with next(self) as step:
                         yield step
             except EOFError:
                 pass
@@ -413,7 +413,7 @@ class StepsProxy(Iterable[Step]):
         return self.file.engine.steps()  # type: ignore[no-any-return]
 
     @contextmanager
-    def next(self) -> Generator[Step]:
+    def __next__(self) -> Generator[Step]:
         status = None
         try:
             status = self.file._state.begin_step()
