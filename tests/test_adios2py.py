@@ -265,6 +265,25 @@ def test_read_adios2py_step_persist(test_filename):
 
 
 @pytest.mark.xfail
+def test_read_adios2py_var_persist_r(test_filename):
+    with adios2py.File(test_filename, mode="r") as file:
+        for n, step in enumerate(file.steps()):
+            if n == 1:
+                var1 = step["scalar"]
+
+        assert var1[()] == 1
+
+
+def test_read_adios2py_var_persist_rra(test_filename):
+    with adios2py.File(test_filename, mode="rra") as file:
+        for n, step in enumerate(file.steps()):
+            if n == 1:
+                var1 = step["scalar"]
+
+        assert var1[()] == 1
+
+
+@pytest.mark.xfail
 def test_read_streaming_adios2py_current_step_0(test_file):
     assert test_file.current_step() is None
 
