@@ -281,14 +281,18 @@ def test_read_adios2py_step_persist(test_filename, mode):
                 step1["scalar"][()]
 
 
-@pytest.mark.parametrize("mode", ["rra", pytest.param("r", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("mode", ["rra", "r"])
 def test_read_adios2py_var_persist_r(test_filename, mode):
     with adios2py.File(test_filename, mode=mode) as file:
         for n, step in enumerate(file.steps):
             if n == 1:
                 var1 = step["scalar"]
 
-        assert var1[()] == 1
+        if mode == "rra":
+            assert var1[()] == 1
+        else:
+            with pytest.raises(KeyError, match="cannot access"):
+                var1[()]
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
