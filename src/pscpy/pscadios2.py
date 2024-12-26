@@ -9,7 +9,7 @@ import numpy as np
 import xarray
 from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
-from xarray.backends import CachingFileManager, DummyFileManager, FileManager
+from xarray.backends import CachingFileManager, FileManager
 from xarray.backends.common import (
     AbstractDataStore,
     BackendArray,
@@ -119,22 +119,6 @@ class Adios2Store(AbstractDataStore):
             kwargs["engine_type"] = engine_type
         manager = CachingFileManager(adios2py.File, filename, mode=mode, kwargs=kwargs)
         return cls(manager, mode=mode, lock=lock)
-
-    @classmethod
-    def open_existing(
-        cls,
-        io_engine: tuple[Any, Any],
-        mode: str = "r",
-        lock: Lock | None = None,
-        step: int | None = None,
-    ) -> Adios2Store:
-        assert mode in ("r", "rra")
-        if lock is None:
-            lock = ADIOS2_LOCK
-
-        file = adios2py.File(io_engine, mode=mode)
-        manager = DummyFileManager(file)  # type: ignore[no-untyped-call]
-        return cls(manager, mode=mode, lock=lock, step=step)
 
     def acquire(self, needs_lock: bool = True) -> adios2py.File:
         with self._manager.acquire_context(needs_lock) as root:  # type: ignore[no-untyped-call]

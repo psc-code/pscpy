@@ -276,17 +276,3 @@ def test_read_streaming_adios2py_current_step_0(test_file):
 #         var = file["dacttime"]
 #         val = var[()]
 #         assert np.isclose(val, 1.4897556e09)
-
-
-def test_construct_from_engine_io():
-    ad = adios2.Adios()
-    io = ad.declare_io("io_name")
-    engine = io.open(
-        str(pscpy.sample_dir / "pfd.000000400.bp"), adios2.bindings.Mode.Read
-    )
-    with adios2py.File((io, engine)) as file:
-        assert all(file.attrs["ib"] == (0, 0, 0))
-        assert all(file.attrs["im"] == (1, 128, 128))
-
-    engine.close()
-    ad.remove_io("io_name")

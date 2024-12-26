@@ -70,23 +70,3 @@ def test_pfd_moments():
 #     )
 #     assert ds.sizes == dict(lats=181, longs=61)
 #     assert np.isclose(ds.dacttime, 1.4897556e09)
-
-
-# def test_open_from_existing():
-#     import adios2
-#
-#     ad = adios2.Adios()
-#     io = ad.declare_io("io_name")
-#     engine = io.open(
-#         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp",
-#         adios2.bindings.Mode.Read,
-#     )
-
-#     store = Adios2Store.open_existing((io, engine))
-#     with xr.open_dataset(store) as ds:
-#         assert "bfak" in ds
-#         assert ds.coords.keys() == set({"longs", "lats"})
-#         assert ds.bfak.sizes == dict(lats=181, longs=61)
-
-#     engine.close()
-#     ad.remove_io("io_name")

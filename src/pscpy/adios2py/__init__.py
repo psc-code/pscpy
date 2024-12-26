@@ -173,7 +173,7 @@ class File(Mapping[str, Any]):
 
     def __init__(
         self,
-        filename_or_obj: str | os.PathLike[Any] | tuple[Any, Any],
+        filename_or_obj: str | os.PathLike[Any],
         mode: str = "r",
         parameters: dict[str, str] | None = None,
         engine_type: str | None = None,
@@ -183,25 +183,21 @@ class File(Mapping[str, Any]):
         self._mode = mode
         self._filename = filename_or_obj
 
-        if isinstance(filename_or_obj, tuple):
-            self._own_io_engine = False
-            self._io, self._engine = filename_or_obj
+        self._own_io_engine = True
+        self._io = next(_generate_io)
+        if parameters is not None:
+            # CachingFileManager needs to pass something hashable, so convert back to dict
+            self.io.set_parameters(dict(parameters))
+        if engine_type is not None:
+            self.io.set_engine(engine_type)
+        if mode == "r":
+            openmode = adios2.bindings.Mode.Read
+        elif mode == "rra":
+            openmode = adios2.bindings.Mode.ReadRandomAccess
         else:
-            self._own_io_engine = True
-            self._io = next(_generate_io)
-            if parameters is not None:
-                # CachingFileManager needs to pass something hashable, so convert back to dict
-                self.io.set_parameters(dict(parameters))
-            if engine_type is not None:
-                self.io.set_engine(engine_type)
-            if mode == "r":
-                openmode = adios2.bindings.Mode.Read
-            elif mode == "rra":
-                openmode = adios2.bindings.Mode.ReadRandomAccess
-            else:
-                msg = f"adios2py: invalid mode {mode}"
-                raise ValueError(msg)
-            self._engine = self.io.open(str(filename_or_obj), openmode)
+            msg = f"adios2py: invalid mode {mode}"
+            raise ValueError(msg)
+        self._engine = self.io.open(str(filename_or_obj), openmode)
 
     def __bool__(self) -> bool:
         return self._engine is not None and self._io is not None
