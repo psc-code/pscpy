@@ -246,9 +246,6 @@ class File(Mapping[str, Any]):
         assert self._io
         return self._io
 
-    def num_steps(self) -> int:
-        return self.engine.steps()  # type: ignore[no-any-return]
-
     def current_step(self) -> int:
         return self.engine.current_step()  # type: ignore[no-any-return]
 
@@ -330,9 +327,9 @@ class StepsProxy(Iterable[File]):
                 yield file
                 file.end_step()
         elif file._mode == "rra":
-            for step in range(file.num_steps()):
+            for step in range(len(self)):
                 file.set_step(step)
                 yield file
 
     def __len__(self) -> int:
-        return self.file.num_steps()
+        return self.file.engine.steps()  # type: ignore[no-any-return]
