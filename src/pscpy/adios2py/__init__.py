@@ -354,7 +354,7 @@ class File(Group):
 
     @property
     def steps(self) -> StepsProxy:
-        return StepsProxy(self)
+        return StepsProxy(self._state)
 
 
 class AttrsProxy(Mapping[str, Any]):
@@ -382,48 +382,44 @@ class AttrsProxy(Mapping[str, Any]):
 
 
 class StepsProxy(Iterable[Step]):
-    _file: File | None
-
-    def __init__(self, file: File) -> None:
-        self._file = file
+    def __init__(self, state: FileState) -> None:
+        self._state = state
 
     @property
-    def file(self) -> File:
-        assert self._file
-        return self._file
+    def state(self) -> FileState:
+        assert self._state
+        return self._state
 
     def __iter__(self) -> Iterator[Step]:
-        # FIXME, should prevent giving out more than one iterator at a time in streaming mode
-        file = self.file
-        if file._state.mode == "r":
+        if self.state.mode == "r":
             try:
                 while True:
                     with next(self) as step:
                         yield step
             except EOFError:
                 pass
-        elif file._state.mode == "rra":
+        elif self.state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]
 
     def __getitem__(self, step: int) -> Step:
-        if self.file._state.mode != "rra" and step != self.file._state.current_step():
+        if self.state.mode != "rra" and step != self.state.current_step():
             msg = f"Failed to get steps({step} in streaming mode."
             raise TypeError(msg)
 
-        return Step(self.file._state, step)
+        return Step(self.state, step)
 
     def __len__(self) -> int:
-        return self.file.engine.steps()  # type: ignore[no-any-return]
+        return self.state.engine.steps()  # type: ignore[no-any-return]
 
     @contextmanager
     def __next__(self) -> Generator[Step]:
         status = None
         try:
-            status = self.file._state.begin_step()
-            step = self.file._state.current_step()
+            status = self.state.begin_step()
+            step = self.state.current_step()
             assert step is not None
             yield self[step]
         finally:
             if status == adios2.bindings.StepStatus.OK:
-                self.file._state.end_step()
+                self.state.end_step()
