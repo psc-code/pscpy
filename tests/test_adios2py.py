@@ -289,6 +289,18 @@ def test_read_adios2py_steps_len(test_filename, mode):
         assert len(file.steps) == 5
 
 
+def test_read_adios2py_steps_getitem_rra(test_filename):
+    with adios2py.File(test_filename, mode="rra") as file:
+        step = file.steps[2]
+        assert step["scalar"][()] == 2
+
+
+def test_read_adios2py_steps_getitem_r(test_filename):
+    with adios2py.File(test_filename, mode="r") as file:  # noqa: SIM117
+        with pytest.raises(TypeError):
+            file.steps[2]
+
+
 @pytest.mark.xfail
 def test_read_streaming_adios2py_current_step_0(test_file):
     assert test_file.current_step() is None

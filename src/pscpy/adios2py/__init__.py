@@ -260,6 +260,11 @@ class File(Mapping[str, Any]):
         return StepsProxy(self)
 
     def set_step(self, step: int | None) -> None:
+        if self._mode != "rra" and step is not None:
+            # FIXME? we could accept this if step == current_step, or even > current_step
+            msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
+            raise TypeError(msg)
+
         self._step = step
 
     def _keys(self) -> set[str]:
