@@ -289,12 +289,12 @@ class File:
     def set_step(self, step: int | None) -> None:
         self._step = step
 
-    def get_variable(self, variable_name: str) -> Variable:
+    def __getitem__(self, name: str) -> Variable:
         if self._mode == "r":
-            return Variable(variable_name, self)
+            return Variable(name, self)
 
         assert self._mode == "rra"
-        return Variable(variable_name, self, step=self._step)
+        return Variable(name, self, step=self._step)
 
 
 class AttrsProxy(Mapping[str, Any]):

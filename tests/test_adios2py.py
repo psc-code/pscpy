@@ -84,7 +84,7 @@ def test_attrs_iter(pfd_file):
 
 
 def test_get_variable(pfd_file):
-    var = pfd_file.get_variable("jeh")
+    var = pfd_file["jeh"]
     assert var.name == "jeh"
     assert var.shape == (9, 512, 128, 1)
     assert var.dtype == np.float32
@@ -92,12 +92,12 @@ def test_get_variable(pfd_file):
 
 def test_get_variable_not_found(pfd_file):
     with pytest.raises(ValueError, match="not found"):
-        pfd_file.get_variable("xyz")
+        pfd_file["xyz"]
 
 
 def test_variable_bool(pfd_file):
     with pfd_file:
-        var = pfd_file.get_variable("jeh")
+        var = pfd_file["jeh"]
         assert var
         assert var.shape == (9, 512, 128, 1)
 
@@ -106,7 +106,7 @@ def test_variable_bool(pfd_file):
 
 def test_variable_shape(pfd_file):
     with pfd_file:
-        var = pfd_file.get_variable("jeh")
+        var = pfd_file["jeh"]
         assert var.shape == (9, 512, 128, 1)
 
     with pytest.raises(ValueError, match="variable is closed"):
@@ -115,7 +115,7 @@ def test_variable_shape(pfd_file):
 
 def test_variable_name(pfd_file):
     with pfd_file:
-        var = pfd_file.get_variable("jeh")
+        var = pfd_file["jeh"]
         assert var.name == "jeh"
 
     with pytest.raises(ValueError, match="variable is closed"):
@@ -124,7 +124,7 @@ def test_variable_name(pfd_file):
 
 def test_variable_dtype(pfd_file):
     with pfd_file:
-        var = pfd_file.get_variable("jeh")
+        var = pfd_file["jeh"]
         assert var.dtype == np.float32
 
     with pytest.raises(ValueError, match="variable is closed"):
@@ -133,7 +133,7 @@ def test_variable_dtype(pfd_file):
 
 def test_variable_repr(pfd_file):
     with pfd_file:
-        var = pfd_file.get_variable("jeh")
+        var = pfd_file["jeh"]
         assert (
             repr(var) == f"{type(var)}(name=jeh, shape=(9, 512, 128, 1), dtype=float32"
         )
@@ -142,33 +142,33 @@ def test_variable_repr(pfd_file):
 
 
 def test_variable_is_reverse_dims(pfd_file):
-    var = pfd_file.get_variable("jeh")
+    var = pfd_file["jeh"]
     assert not var._is_reverse_dims()
 
     # with adios2py.File(
     #     "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
     # ) as file:
-    #     var = file.get_variable("pot")
+    #     var = file["pot"]
     #     assert var.is_reverse_dims
 
 
 def test_variable_getitem_scalar(test_file):
     test_file.begin_step()
-    var = test_file.get_variable("scalar")
+    var = test_file["scalar"]
     assert var[()] == 0
     test_file.end_step()
 
 
 def test_variable_getitem_arr1d(test_file):
     test_file.begin_step()
-    var = test_file.get_variable("arr1d")
+    var = test_file["arr1d"]
     assert np.all(var[()] == np.arange(10))
     test_file.end_step()
 
 
 def test_variable_getitem_arr1d_indexing(test_file):
     test_file.begin_step()
-    var = test_file.get_variable("arr1d")
+    var = test_file["arr1d"]
     assert var[2] == 2
     assert np.all(var[2:4] == np.arange(10)[2:4])
     assert np.all(var[:] == np.arange(10)[:])
@@ -178,7 +178,7 @@ def test_variable_getitem_arr1d_indexing(test_file):
 @pytest.mark.xfail
 def test_variable_getitem_arr1d_indexing_step(test_file):
     test_file.begin_step()
-    var = test_file.get_variable("arr1d")
+    var = test_file["arr1d"]
     assert np.all(var[::2] == np.arange(10)[::2])
     test_file.end_step()
 
@@ -186,16 +186,16 @@ def test_variable_getitem_arr1d_indexing_step(test_file):
 @pytest.mark.xfail
 def test_variable_getitem_arr1d_indexing_reverse(test_file):
     test_file.begin_step()
-    var = test_file.get_variable("arr1d")
+    var = test_file["arr1d"]
     assert np.all(var[::-1] == np.arange(10)[::-1])
     test_file.end_step()
 
 
 def test_variable_array(test_file):
     test_file.begin_step()
-    scalar = np.asarray(test_file.get_variable("scalar"))
+    scalar = np.asarray(test_file["scalar"])
     assert np.array_equal(scalar, 0)
-    arr1d = np.asarray(test_file.get_variable("arr1d"))
+    arr1d = np.asarray(test_file["arr1d"])
     assert np.array_equal(arr1d, np.arange(10))
     test_file.end_step()
 
@@ -238,18 +238,18 @@ def test_read_streaming_adios2_step_persist(tmp_path):
 def test_read_adios2py(test_filename, mode):
     with adios2py.File(test_filename, mode=mode) as file:
         for n, step in enumerate(file.steps()):
-            scalar = step.get_variable("scalar")[()]
+            scalar = step["scalar"][()]
             assert scalar == n
         assert n == 4
 
 
 def test_read_streaming_adios2py_mixed(test_file):
     test_file.begin_step()
-    assert test_file.get_variable("scalar")[()] == 0
+    assert test_file["scalar"][()] == 0
     test_file.end_step()
 
     for step in test_file.steps():
-        scalar = test_file.get_variable("scalar")[()]
+        scalar = test_file["scalar"][()]
         assert scalar == step.current_step()
     assert test_file.current_step() == 4
 
@@ -260,7 +260,7 @@ def test_read_streaming_adios2py_step_persist(test_file):
         if n == 1:
             step1 = step
 
-    assert step1.get_variable("scalar")[()] == 1
+    assert step1["scalar"][()] == 1
 
 
 @pytest.mark.xfail
@@ -273,7 +273,7 @@ def test_read_streaming_adios2py_current_step_0(test_file):
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
 #     ) as file:
 #         assert "dacttime" in file.variable_names
-#         var = file.get_variable("dacttime")
+#         var = file["dacttime"]
 #         val = var[()]
 #         assert np.isclose(val, 1.4897556e09)
 

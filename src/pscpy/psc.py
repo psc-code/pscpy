@@ -22,7 +22,7 @@ class RunInfo:
         corner: ArrayLike | None = None,
     ) -> None:
         var = next(iter(file.keys()))
-        self.gdims = np.asarray(file.get_variable(var).shape)[::-1]
+        self.gdims = np.asarray(file[var].shape)[::-1][:3]
 
         self.length = file.attrs.get("length", length)
         self.corner = file.attrs.get("corner", corner)
