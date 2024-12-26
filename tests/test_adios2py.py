@@ -255,12 +255,13 @@ def test_read_streaming_adios2py_mixed(test_file):
 
 
 @pytest.mark.xfail
-def test_read_streaming_adios2py_step_persist(test_file):
-    for n, step in enumerate(test_file.steps()):
-        if n == 1:
-            step1 = step
+def test_read_adios2py_step_persist(test_filename):
+    with adios2py.File(test_filename, mode="r") as file:
+        for n, step in enumerate(file.steps()):
+            if n == 1:
+                step1 = step
 
-    assert step1["scalar"][()] == 1
+        assert step1["scalar"][()] == 1
 
 
 @pytest.mark.xfail
