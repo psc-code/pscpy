@@ -279,6 +279,10 @@ class Step(Group):
         assert self._state.mode == "rra"
         return Variable(name, self, step=self._step)
 
+    def current_step(self) -> int:
+        assert self._step is None or self._step == self._state.engine.current_step()
+        return self._state.engine.current_step()  # type: ignore[no-any-return]
+
 
 class File(Group):
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
