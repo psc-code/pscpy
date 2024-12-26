@@ -177,7 +177,7 @@ def _mode_to_adios2_openmode(mode: str) -> adios2.bindings.Mode:
 class FileState:
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
-    _in_step: bool = False
+    _step_status: adios2.bindings.StepStatus | None = None
 
     def __init__(
         self,
@@ -227,17 +227,19 @@ class FileState:
         return self._engine
 
     def begin_step(self) -> adios2.bindings.StepStatus:
-        assert not self._in_step
-        status = self.engine.begin_step()
-        if status == adios2.bindings.StepStatus.OK:
-            self._in_step = True
-
-        return status
+        assert self._step_status is None
+        self._step_status = self.engine.begin_step()
+        if self._step_status == adios2.bindings.StepStatus.EndOfStream:
+            raise EOFError
+        if self._step_status != adios2.bindings.StepStatus.OK:
+            msg = f"adios2 StepStatus = {self._step_status}"
+            raise RuntimeError(msg)
+        return self._step_status
 
     def end_step(self) -> None:
-        assert self._in_step
+        assert self._step_status == adios2.bindings.StepStatus.OK
         self.engine.end_step()
-        self._in_step = False
+        self._step_status = None
 
     def __repr__(self) -> str:
         if not self:
@@ -391,17 +393,10 @@ class StepsProxy(Iterable[Step]):
         if file._state.mode == "r":
             try:
                 while True:
-                    status = file._state.begin_step()
-                    if status == adios2.bindings.StepStatus.EndOfStream:
-                        break
-                    assert status == adios2.bindings.StepStatus.OK
-
-                    yield Step(self.file._state, None)
-                    file._state.end_step()
-            finally:
-                # if iteration started early, still have to finish step
-                if file._state._in_step:
-                    file._state.end_step()
+                    with self.next() as step:
+                        yield step
+            except EOFError:
+                pass
         elif file._state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]
@@ -419,8 +414,10 @@ class StepsProxy(Iterable[Step]):
 
     @contextmanager
     def next(self) -> Generator[Step]:
+        status = None
         try:
-            self.file._state.begin_step()
+            status = self.file._state.begin_step()
             yield self[None]
         finally:
-            self.file._state.end_step()
+            if status == adios2.bindings.StepStatus.OK:
+                self.file._state.end_step()
