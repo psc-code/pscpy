@@ -176,6 +176,7 @@ def _mode_to_adios2_openmode(mode: str) -> adios2.bindings.Mode:
 class FileState:
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
+    _in_step: bool = False
 
     def __init__(
         self,
@@ -223,6 +224,19 @@ class FileState:
     def engine(self) -> adios2.Engine:
         assert self
         return self._engine
+
+    def begin_step(self) -> adios2.bindings.StepStatus:
+        assert not self._in_step
+        status = self.engine.begin_step()
+        if status == adios2.bindings.StepStatus.OK:
+            self._in_step = True
+
+        return status
+
+    def end_step(self) -> None:
+        assert self._in_step
+        self.engine.end_step()
+        self._in_step = False
 
     def __repr__(self) -> str:
         if not self:
@@ -331,10 +345,10 @@ class File(Group):
         return self.engine.current_step()  # type: ignore[no-any-return]
 
     def begin_step(self) -> adios2.StepStatus:
-        return self.engine.begin_step()
+        return self._state.begin_step()
 
     def end_step(self) -> None:
-        return self.engine.end_step()  # type: ignore[no-any-return]
+        return self._state.end_step()
 
     @property
     def steps(self) -> StepsProxy:
