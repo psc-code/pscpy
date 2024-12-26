@@ -163,13 +163,37 @@ def _close_io(io: adios2.IO) -> None:
     _ad.remove_io(io._name)
 
 
+def _mode_to_adios2_openmode(mode: str) -> adios2.bindings.Mode:
+    if mode == "r":
+        return adios2.bindings.Mode.Read
+    if mode == "rra":
+        return adios2.bindings.Mode.ReadRandomAccess
+
+    msg = f"adios2py: invalid mode {mode}"
+    raise ValueError(msg)
+
+
 class FileState:
     _io: adios2.IO | None = None
     _engine: adios2.Engine | None = None
 
-    def __init__(self, io: adios2.IO, engine: adios2.Engine) -> None:
-        self._io = io
-        self._engine = engine
+    def __init__(
+        self,
+        filename_or_obj: str | os.PathLike[Any],
+        mode: str,
+        parameters: dict[str, str] | None = None,
+        engine_type: str | None = None,
+    ) -> None:
+        self._io = next(_generate_io)
+        if parameters is not None:
+            # CachingFileManager needs to pass something hashable, so convert back to dict
+            self._io.set_parameters(dict(parameters))
+        if engine_type is not None:
+            self._io.set_engine(engine_type)
+
+        openmode = _mode_to_adios2_openmode(mode)
+        # FIXME use os.fspath
+        self._engine = self._io.open(str(filename_or_obj), openmode)
 
     def __bool__(self) -> bool:
         return self._io is not None and self._engine is not None
@@ -205,25 +229,10 @@ class File(Mapping[str, Any]):
         engine_type: str | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
-        assert mode in ("r", "rra")
         self._mode = mode
         self._filename = filename_or_obj
 
-        io = next(_generate_io)
-        if parameters is not None:
-            # CachingFileManager needs to pass something hashable, so convert back to dict
-            io.set_parameters(dict(parameters))
-        if engine_type is not None:
-            io.set_engine(engine_type)
-        if mode == "r":
-            openmode = adios2.bindings.Mode.Read
-        elif mode == "rra":
-            openmode = adios2.bindings.Mode.ReadRandomAccess
-        else:
-            msg = f"adios2py: invalid mode {mode}"
-            raise ValueError(msg)
-        engine = io.open(str(filename_or_obj), openmode)
-        self._state = FileState(io, engine)
+        self._state = FileState(filename_or_obj, mode, parameters, engine_type)
 
     def __bool__(self) -> bool:
         return bool(self._state)
