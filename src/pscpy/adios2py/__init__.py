@@ -344,12 +344,6 @@ class File(Group):
     def current_step(self) -> int:
         return self.engine.current_step()  # type: ignore[no-any-return]
 
-    def begin_step(self) -> adios2.StepStatus:
-        return self._state.begin_step()
-
-    def end_step(self) -> None:
-        return self._state.end_step()
-
     @property
     def steps(self) -> StepsProxy:
         return StepsProxy(self)
@@ -394,14 +388,19 @@ class StepsProxy(Iterable[Step]):
         # FIXME, should prevent giving out more than one iterator at a time in streaming mode
         file = self.file
         if file._state.mode == "r":
-            while True:
-                status = file.begin_step()
-                if status == adios2.bindings.StepStatus.EndOfStream:
-                    break
-                assert status == adios2.bindings.StepStatus.OK
+            try:
+                while True:
+                    status = file._state.begin_step()
+                    if status == adios2.bindings.StepStatus.EndOfStream:
+                        break
+                    assert status == adios2.bindings.StepStatus.OK
 
-                yield Step(self.file._state, None)
-                file.end_step()
+                    yield Step(self.file._state, None)
+                    file._state.end_step()
+            finally:
+                # if iteration started early, still have to finish step
+                if file._state._in_step:
+                    file._state.end_step()
         elif file._state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]

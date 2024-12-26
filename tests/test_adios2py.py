@@ -152,51 +152,45 @@ def test_variable_is_reverse_dims(pfd_file):
 
 
 def test_variable_getitem_scalar(test_file):
-    test_file.begin_step()
-    var = test_file["scalar"]
-    assert var[()] == 0
-    test_file.end_step()
+    for step in test_file.steps:
+        var = step["scalar"]
+        assert var[()] == step.current_step()
 
 
 def test_variable_getitem_arr1d(test_file):
-    test_file.begin_step()
-    var = test_file["arr1d"]
-    assert np.all(var[()] == np.arange(10))
-    test_file.end_step()
+    for step in test_file.steps:
+        var = step["arr1d"]
+        assert np.all(var[()] == np.arange(10))
 
 
 def test_variable_getitem_arr1d_indexing(test_file):
-    test_file.begin_step()
-    var = test_file["arr1d"]
-    assert var[2] == 2
-    assert np.all(var[2:4] == np.arange(10)[2:4])
-    assert np.all(var[:] == np.arange(10)[:])
-    test_file.end_step()
+    for step in test_file.steps:
+        var = step["arr1d"]
+        assert var[2] == 2
+        assert np.all(var[2:4] == np.arange(10)[2:4])
+        assert np.all(var[:] == np.arange(10)[:])
 
 
 @pytest.mark.xfail
 def test_variable_getitem_arr1d_indexing_step(test_file):
-    test_file.begin_step()
-    var = test_file["arr1d"]
-    assert np.all(var[::2] == np.arange(10)[::2])
-    test_file.end_step()
+    for step in test_file.steps:
+        var = step["arr1d"]
+        assert np.all(var[::2] == np.arange(10)[::2])
 
 
 @pytest.mark.xfail
 def test_variable_getitem_arr1d_indexing_reverse(test_file):
-    test_file.begin_step()
-    var = test_file["arr1d"]
-    assert np.all(var[::-1] == np.arange(10)[::-1])
-    test_file.end_step()
+    for step in test_file.steps:
+        var = step["arr1d"]
+        assert np.all(var[::-1] == np.arange(10)[::-1])
 
 
 def test_variable_array(test_file):
-    test_file.begin_step()
-    scalar = np.asarray(test_file["scalar"])
-    assert np.array_equal(scalar, 0)
-    arr1d = np.asarray(test_file["arr1d"])
-    assert np.array_equal(arr1d, np.arange(10))
-    test_file.end_step()
+    for step in test_file.steps:
+        scalar = np.asarray(step["scalar"])
+        assert np.array_equal(scalar, step.current_step())
+        arr1d = np.asarray(step["arr1d"])
+        assert np.array_equal(arr1d, np.arange(10))
 
 
 def test_get_attribute(pfd_file):
@@ -243,10 +237,13 @@ def test_read_adios2py(test_filename, mode):
 
 
 def test_read_streaming_adios2py_mixed(test_file):
-    test_file.begin_step()
-    assert test_file["scalar"][()] == 0
-    test_file.end_step()
+    # do 0th iteration
+    for step in test_file.steps:
+        scalar = test_file["scalar"][()]
+        assert scalar == step.current_step()
+        break
 
+    # then the rest separately
     for step in test_file.steps:
         scalar = test_file["scalar"][()]
         assert scalar == step.current_step()

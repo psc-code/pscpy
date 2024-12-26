@@ -51,17 +51,10 @@ def test_vars_attrs(test_store):
     assert vars == {}
     assert attrs == {}
 
-    test_store.ds.begin_step()
-    vars, attrs = test_store.load()
-    assert vars.keys() == set({"scalar", "arr1d"})
-    assert attrs == {}
-    test_store.ds.end_step()
-
-    test_store.ds.begin_step()
-    vars, attrs = test_store.load()
-    assert vars.keys() == set({"scalar", "arr1d"})
-    assert attrs == {}
-    test_store.ds.end_step()
+    for step in test_store.ds:
+        vars, attrs = step.load()
+        assert vars.keys() == set({"scalar", "arr1d"})
+        assert attrs == {}
 
 
 def test_rra(test_filename):
