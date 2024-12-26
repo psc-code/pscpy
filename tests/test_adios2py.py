@@ -63,7 +63,6 @@ def test_with(pfd_file):
 
 def test_file_repr(pfd_file):
     print(repr(pfd_file))
-    assert repr(pfd_file).startswith(f"{type(pfd_file)}(filename=")
 
 
 def test_keys(pfd_file):

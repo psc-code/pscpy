@@ -25,7 +25,7 @@ def test_open_close(test_store):
 
 
 def test_open_with_parameters(test_store):
-    filename = test_store.ds._filename
+    filename = test_store.ds._state.filename
     test_store.close()
 
     params = {"OpenTimeoutSecs": "20"}

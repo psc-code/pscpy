@@ -184,6 +184,8 @@ class FileState:
         parameters: dict[str, str] | None = None,
         engine_type: str | None = None,
     ) -> None:
+        self._filename = filename_or_obj
+        self._mode = mode
         self._io = next(_generate_io)
         if parameters is not None:
             # CachingFileManager needs to pass something hashable, so convert back to dict
@@ -205,6 +207,14 @@ class FileState:
         self._io = None
 
     @property
+    def filename(self) -> str | os.PathLike[Any]:
+        return self._filename
+
+    @property
+    def mode(self) -> str:
+        return self._mode
+
+    @property
     def io(self) -> adios2.IO:
         assert self
         return self._io
@@ -213,6 +223,12 @@ class FileState:
     def engine(self) -> adios2.Engine:
         assert self
         return self._engine
+
+    def __repr__(self) -> str:
+        if not self:
+            return "adios2py.Filestate (closed)"
+
+        return f"adios2py.FileState(filename={self.filename}, mode={self.mode})"
 
 
 class File(Mapping[str, Any]):
@@ -229,9 +245,6 @@ class File(Mapping[str, Any]):
         engine_type: str | None = None,
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
-        self._mode = mode
-        self._filename = filename_or_obj
-
         self._state = FileState(filename_or_obj, mode, parameters, engine_type)
 
     def __bool__(self) -> bool:
@@ -250,7 +263,7 @@ class File(Mapping[str, Any]):
         return AttrsProxy(self)
 
     def __repr__(self) -> str:
-        return f"{type(self)}(filename='{self._filename}')"
+        return f"adios2py.File(state={self._state})"
 
     def __enter__(self) -> File:
         logger.debug("File.__enter__()")
@@ -287,7 +300,7 @@ class File(Mapping[str, Any]):
         return StepsProxy(self)
 
     def set_step(self, step: int | None) -> None:
-        if self._mode != "rra" and step is not None:
+        if self._state.mode != "rra" and step is not None:
             # FIXME? we could accept this if step == current_step, or even > current_step
             msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
             raise TypeError(msg)
@@ -298,10 +311,10 @@ class File(Mapping[str, Any]):
         return self.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
-        if self._mode == "r":
+        if self._state.mode == "r":
             return Variable(name, self)
 
-        assert self._mode == "rra"
+        assert self._state.mode == "rra"
         return Variable(name, self, step=self._step)
 
     def __len__(self) -> int:
@@ -349,7 +362,7 @@ class StepsProxy(Iterable[File]):
     def __iter__(self) -> Iterator[File]:
         # FIXME, should prevent giving out more than one iterator at a time in streaming mode
         file = self.file
-        if file._mode == "r":
+        if file._state.mode == "r":
             while True:
                 status = file.begin_step()
                 if status == adios2.bindings.StepStatus.EndOfStream:
@@ -358,7 +371,7 @@ class StepsProxy(Iterable[File]):
 
                 yield file
                 file.end_step()
-        elif file._mode == "rra":
+        elif file._state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]
 
