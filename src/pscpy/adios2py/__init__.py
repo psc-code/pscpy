@@ -34,22 +34,18 @@ class Variable:
         self._step = step
         self._reverse_dims = self._is_reverse_dims()
 
-    @property
-    def state(self) -> FileState:
-        return self._state
-
     def __bool__(self) -> bool:
         if not self._state:  # file closed?
             return False
 
-        if self.state.mode == "rra" or self._step is None:
+        if self._state.mode == "rra" or self._step is None:
             return True
 
-        return bool(self._step == self.state.current_step())
+        return bool(self._step == self._state.current_step())
 
     @property
     def var(self) -> adios2.Variable:
-        var = self.state.io.inquire_variable(self._name)
+        var = self._state.io.inquire_variable(self._name)
         if not var:
             msg = f"Variable '{self._name}' not found"
             raise ValueError(msg)
@@ -71,8 +67,8 @@ class Variable:
         return np.dtype(adios2.type_adios_to_numpy(self.var.type()))  # type: ignore[no-any-return]
 
     def _is_reverse_dims(self) -> bool:
-        step = self.state.current_step() or 0
-        infos = self.state.engine.blocks_info(self.name, step)
+        step = self._state.current_step() or 0
+        infos = self._state.engine.blocks_info(self.name, step)
         return infos[0]["IsReverseDims"] == "True"  # type: ignore[no-any-return]
 
     def __array__(self) -> np.ndarray[Any, Any]:
@@ -128,12 +124,12 @@ class Variable:
 
         var = self.var
         if self._step is not None:
-            if self.state.mode == "rra":
+            if self._state.mode == "rra":
                 var.set_step_selection([self._step, 1])
-            elif self._step != self.state.current_step():
+            elif self._step != self._state.current_step():
                 msg = (
                     f"cannot access step {self._step} in streaming mode, "
-                    f"current_step = {self.state.current_step()}"
+                    f"current_step = {self._state.current_step()}"
                 )
                 raise KeyError(msg)
 
@@ -144,7 +140,7 @@ class Variable:
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        self.state.engine.get(var, arr, adios2.bindings.Mode.Sync)
+        self._state.engine.get(var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
@@ -276,18 +272,14 @@ class Group(Mapping[str, Any]):
     def __bool__(self) -> bool:
         return bool(self._state)
 
-    @property
-    def state(self) -> FileState:
-        return self._state
-
     def _keys(self) -> set[str]:
-        return self.state.io.available_variables().keys()  # type: ignore[no-any-return]
+        return self._state.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
-        if self.state.mode == "r":
+        if self._state.mode == "r":
             return Variable(name, self._state)
 
-        assert self.state.mode == "rra"
+        assert self._state.mode == "rra"
         return Variable(name, self._state)
 
     def __len__(self) -> int:
@@ -303,7 +295,7 @@ class Step(Group):
         self._step = step
 
     def __getitem__(self, name: str) -> Variable:
-        return Variable(name, self.state, step=self._step)
+        return Variable(name, self._state, step=self._step)
 
     def step(self) -> int:
         return self._step
@@ -329,7 +321,7 @@ class File(Group):
         return AttrsProxy(self)
 
     def __repr__(self) -> str:
-        return f"adios2py.File(state={self.state})"
+        return f"adios2py.File(state={self._state})"
 
     def __enter__(self) -> File:
         logger.debug("File.__enter__()")
@@ -350,19 +342,20 @@ class File(Group):
             self.close()
 
     def close(self) -> None:
-        self.state.close()
+        self._state.close()
 
     @property
     def steps(self) -> StepsProxy:
-        return StepsProxy(self.state)
+        return StepsProxy(self._state)
 
 
 class AttrsProxy(Mapping[str, Any]):
     def __init__(self, file: File) -> None:
         self._file = file
+        self._state = file._state
 
     def __getitem__(self, name: str) -> Any:
-        attr = self._file.state.io.inquire_attribute(name)
+        attr = self._state.io.inquire_attribute(name)
         if not attr:
             raise KeyError()
 
@@ -378,47 +371,43 @@ class AttrsProxy(Mapping[str, Any]):
         yield from self._keys()
 
     def _keys(self) -> set[str]:
-        return set(self._file.state.io.available_attributes().keys())
+        return set(self._state.io.available_attributes().keys())
 
 
 class StepsProxy(Iterable[Step]):
     def __init__(self, state: FileState) -> None:
         self._state = state
 
-    @property
-    def state(self) -> FileState:
-        return self._state
-
     def __iter__(self) -> Iterator[Step]:
-        if self.state.mode == "r":
+        if self._state.mode == "r":
             try:
                 while True:
                     with next(self) as step:
                         yield step
             except EOFError:
                 pass
-        elif self.state.mode == "rra":
+        elif self._state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]
 
     def __getitem__(self, step: int) -> Step:
-        if self.state.mode != "rra" and step != self.state.current_step():
+        if self._state.mode != "rra" and step != self._state.current_step():
             msg = f"Failed to get steps({step} in streaming mode."
             raise TypeError(msg)
 
-        return Step(self.state, step)
+        return Step(self._state, step)
 
     def __len__(self) -> int:
-        return self.state.engine.steps()  # type: ignore[no-any-return]
+        return self._state.engine.steps()  # type: ignore[no-any-return]
 
     @contextmanager
     def __next__(self) -> Generator[Step]:
         status = None
         try:
-            status = self.state.begin_step()
-            step = self.state.current_step()
+            status = self._state.begin_step()
+            step = self._state.current_step()
             assert step is not None
             yield self[step]
         finally:
             if status == adios2.bindings.StepStatus.OK:
-                self.state.end_step()
+                self._state.end_step()
