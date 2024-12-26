@@ -26,7 +26,7 @@ class Variable:
         logger.debug("Variable.__init__(name=%s, file=%s)", name, file)
         if not file.io.inquire_variable(name):
             msg = f"Variable '{name}' not found in {file}"
-            raise ValueError(msg)
+            raise KeyError(msg)
 
         self._name = name
         self._file = file

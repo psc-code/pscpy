@@ -91,7 +91,7 @@ def test_get_variable(pfd_file):
 
 
 def test_get_variable_not_found(pfd_file):
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(KeyError):
         pfd_file["xyz"]
 
 
