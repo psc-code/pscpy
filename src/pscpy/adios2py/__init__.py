@@ -163,11 +163,38 @@ def _close_io(io: adios2.IO) -> None:
     _ad.remove_io(io._name)
 
 
+class FileState:
+    _io: adios2.IO | None = None
+    _engine: adios2.Engine | None = None
+
+    def __init__(self, io: adios2.IO, engine: adios2.Engine) -> None:
+        self._io = io
+        self._engine = engine
+
+    def __bool__(self) -> bool:
+        return self._io is not None and self._engine is not None
+
+    def close(self) -> None:
+        self.engine.close()
+        _close_io(self.io)
+        self._engine = None
+        self._io = None
+
+    @property
+    def io(self) -> adios2.IO:
+        assert self
+        return self._io
+
+    @property
+    def engine(self) -> adios2.Engine:
+        assert self
+        return self._engine
+
+
 class File(Mapping[str, Any]):
     """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
 
-    _io: adios2.IO | None = None
-    _engine: adios2.Engine | None = None
+    _state: FileState
     _step: int | None = None
 
     def __init__(
@@ -182,12 +209,12 @@ class File(Mapping[str, Any]):
         self._mode = mode
         self._filename = filename_or_obj
 
-        self._io = next(_generate_io)
+        io = next(_generate_io)
         if parameters is not None:
             # CachingFileManager needs to pass something hashable, so convert back to dict
-            self.io.set_parameters(dict(parameters))
+            io.set_parameters(dict(parameters))
         if engine_type is not None:
-            self.io.set_engine(engine_type)
+            io.set_engine(engine_type)
         if mode == "r":
             openmode = adios2.bindings.Mode.Read
         elif mode == "rra":
@@ -195,10 +222,19 @@ class File(Mapping[str, Any]):
         else:
             msg = f"adios2py: invalid mode {mode}"
             raise ValueError(msg)
-        self._engine = self.io.open(str(filename_or_obj), openmode)
+        engine = io.open(str(filename_or_obj), openmode)
+        self._state = FileState(io, engine)
 
     def __bool__(self) -> bool:
-        return self._engine is not None and self._io is not None
+        return bool(self._state)
+
+    @property
+    def engine(self) -> adios2.Engine:
+        return self._state.engine
+
+    @property
+    def io(self) -> adios2.IO:
+        return self._state.io
 
     @property
     def attrs(self) -> AttrsProxy:
@@ -226,22 +262,7 @@ class File(Mapping[str, Any]):
             self.close()
 
     def close(self) -> None:
-        assert self  # is_open
-
-        self.engine.close()
-        _close_io(self.io)
-        self._engine = None
-        self._io = None
-
-    @property
-    def engine(self) -> adios2.Engine:
-        assert self._engine
-        return self._engine
-
-    @property
-    def io(self) -> adios2.IO:
-        assert self._io
-        return self._io
+        self._state.close()
 
     def current_step(self) -> int:
         return self.engine.current_step()  # type: ignore[no-any-return]
