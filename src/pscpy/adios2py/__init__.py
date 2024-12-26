@@ -231,21 +231,11 @@ class FileState:
         return f"adios2py.FileState(filename={self.filename}, mode={self.mode})"
 
 
-class File(Mapping[str, Any]):
-    """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
-
+class Group(Mapping[str, Any]):
     _state: FileState
-    _step: int | None = None
 
-    def __init__(
-        self,
-        filename_or_obj: str | os.PathLike[Any],
-        mode: str = "r",
-        parameters: dict[str, str] | None = None,
-        engine_type: str | None = None,
-    ) -> None:
-        logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
-        self._state = FileState(filename_or_obj, mode, parameters, engine_type)
+    def __init__(self, state: FileState) -> None:
+        self._state = state
 
     def __bool__(self) -> bool:
         return bool(self._state)
@@ -257,6 +247,53 @@ class File(Mapping[str, Any]):
     @property
     def io(self) -> adios2.IO:
         return self._state.io
+
+    def _keys(self) -> set[str]:
+        return self.io.available_variables().keys()  # type: ignore[no-any-return]
+
+    def __getitem__(self, name: str) -> Variable:
+        if self._state.mode == "r":
+            return Variable(name, self)
+
+        assert self._state.mode == "rra"
+        return Variable(name, self)
+
+    def __len__(self) -> int:
+        return len(self._keys())
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._keys()
+
+
+class Step(Group):
+    _step: int | None
+
+    def __init__(self, state: FileState, step: int | None) -> None:
+        super().__init__(state)
+        self._step = step
+
+    def __getitem__(self, name: str) -> Variable:
+        if self._state.mode == "r":
+            return Variable(name, self)
+
+        assert self._state.mode == "rra"
+        return Variable(name, self, step=self._step)
+
+
+class File(Group):
+    """Wrapper for an `adios2.IO` object to facilitate variable and attribute reading."""
+
+    _step: int | None = None
+
+    def __init__(
+        self,
+        filename_or_obj: str | os.PathLike[Any],
+        mode: str = "r",
+        parameters: dict[str, str] | None = None,
+        engine_type: str | None = None,
+    ) -> None:
+        logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
+        super().__init__(FileState(filename_or_obj, mode, parameters, engine_type))
 
     @property
     def attrs(self) -> AttrsProxy:
@@ -307,21 +344,12 @@ class File(Mapping[str, Any]):
 
         self._step = step
 
-    def _keys(self) -> set[str]:
-        return self.io.available_variables().keys()  # type: ignore[no-any-return]
-
     def __getitem__(self, name: str) -> Variable:
         if self._state.mode == "r":
             return Variable(name, self)
 
         assert self._state.mode == "rra"
         return Variable(name, self, step=self._step)
-
-    def __len__(self) -> int:
-        return len(self._keys())
-
-    def __iter__(self) -> Iterator[str]:
-        yield from self._keys()
 
 
 class AttrsProxy(Mapping[str, Any]):
@@ -348,7 +376,7 @@ class AttrsProxy(Mapping[str, Any]):
         return set(self._file.io.available_attributes().keys())
 
 
-class StepsProxy(Iterable[File]):
+class StepsProxy(Iterable[Step]):
     _file: File | None
 
     def __init__(self, file: File) -> None:
@@ -359,7 +387,7 @@ class StepsProxy(Iterable[File]):
         assert self._file
         return self._file
 
-    def __iter__(self) -> Iterator[File]:
+    def __iter__(self) -> Iterator[Step]:
         # FIXME, should prevent giving out more than one iterator at a time in streaming mode
         file = self.file
         if file._state.mode == "r":
@@ -369,15 +397,19 @@ class StepsProxy(Iterable[File]):
                     break
                 assert status == adios2.bindings.StepStatus.OK
 
-                yield file
+                yield Step(self.file._state, None)
                 file.end_step()
         elif file._state.mode == "rra":
             for n in range(len(self)):
                 yield self[n]
 
-    def __getitem__(self, n: int) -> File:
-        self.file.set_step(n)
-        return self.file
+    def __getitem__(self, step: int) -> Step:
+        if self.file._state.mode != "rra" and step is not None:
+            # FIXME? we could accept this if step == current_step, or even > current_step
+            msg = "Failed to set_step({step}), only possible when file was opened in random access mode."
+            raise TypeError(msg)
+
+        return Step(self.file._state, step)
 
     def __len__(self) -> int:
         return self.file.engine.steps()  # type: ignore[no-any-return]
