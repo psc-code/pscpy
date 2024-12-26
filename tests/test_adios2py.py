@@ -283,6 +283,12 @@ def test_read_adios2py_var_persist_rra(test_filename):
         assert var1[()] == 1
 
 
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_read_adios2py_steps_len(test_filename, mode):
+    with adios2py.File(test_filename, mode=mode) as file:
+        assert len(file.steps) == 5
+
+
 @pytest.mark.xfail
 def test_read_streaming_adios2py_current_step_0(test_file):
     assert test_file.current_step() is None

@@ -333,3 +333,6 @@ class StepsProxy(Iterable[File]):
             for step in range(file.num_steps()):
                 file.set_step(step)
                 yield file
+
+    def __len__(self) -> int:
+        return self.file.num_steps()
