@@ -130,7 +130,14 @@ class Variable:
 
         var = self.var
         if self._step is not None:
-            var.set_step_selection([self._step, 1])
+            if self._file._state.mode == "rra":
+                var.set_step_selection([self._step, 1])
+            elif self._step != self._file._state.current_step():
+                msg = (
+                    f"cannot access step {self._step} in streaming mode, "
+                    f"current_step = {self._file._state.current_step()}"
+                )
+                raise KeyError(msg)
 
         if len(sel_start) > 0:
             var.set_selection(
@@ -296,10 +303,6 @@ class Step(Group):
         self._step = step
 
     def __getitem__(self, name: str) -> Variable:
-        if self._state.mode == "r":
-            return Variable(name, self)
-
-        assert self._state.mode == "rra"
         return Variable(name, self, step=self._step)
 
     def step(self) -> int:
