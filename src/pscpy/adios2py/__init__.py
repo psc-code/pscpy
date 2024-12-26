@@ -36,9 +36,6 @@ class Variable:
 
     @property
     def state(self) -> FileState:
-        if not self._state:
-            msg = f"Variable: {self._state} is closed."
-            raise ValueError(msg)
         return self._state
 
     def __bool__(self) -> bool:
@@ -217,6 +214,11 @@ class FileState:
         self._engine = None
         self._io = None
 
+    def _assert_is_not_closed(self) -> None:
+        if not self:
+            msg = f"{self} is closed."
+            raise ValueError(msg)
+
     @property
     def filename(self) -> str | os.PathLike[Any]:
         return self._filename
@@ -227,11 +229,12 @@ class FileState:
 
     @property
     def io(self) -> adios2.IO:
-        assert self
+        self._assert_is_not_closed()
         return self._io
 
     @property
     def engine(self) -> adios2.Engine:
+        self._assert_is_not_closed()
         assert self
         return self._engine
 
@@ -275,9 +278,6 @@ class Group(Mapping[str, Any]):
 
     @property
     def state(self) -> FileState:
-        if not self._state:
-            msg = f"{self} is closed"
-            raise ValueError(msg)
         return self._state
 
     def _keys(self) -> set[str]:
@@ -387,7 +387,6 @@ class StepsProxy(Iterable[Step]):
 
     @property
     def state(self) -> FileState:
-        assert self._state
         return self._state
 
     def __iter__(self) -> Iterator[Step]:
