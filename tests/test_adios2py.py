@@ -134,10 +134,11 @@ def test_variable_repr(pfd_file):
     with pfd_file:
         var = pfd_file["jeh"]
         assert (
-            repr(var) == f"{type(var)}(name=jeh, shape=(9, 512, 128, 1), dtype=float32"
+            repr(var)
+            == "adios2py.Variable(name=jeh, shape=(9, 512, 128, 1), dtype=float32"
         )
 
-    assert repr(var) == f"{type(var)} (closed)"
+    assert repr(var) == "adios2py.Variable(name=jeh) (closed)"
 
 
 def test_variable_is_reverse_dims(pfd_file):

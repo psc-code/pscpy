@@ -145,9 +145,9 @@ class Variable:
 
     def __repr__(self) -> str:
         if not self:
-            return f"{type(self)} (closed)"
+            return f"adios2py.Variable(name={self._name}) (closed)"
 
-        return f"{type(self)}(name={self.name}, shape={self.shape}, dtype={self.dtype}"
+        return f"adios2py.Variable(name={self._name}, shape={self.shape}, dtype={self.dtype}"
 
 
 def _io_generator(ad: adios2.Adios) -> Generator[adios2.IO]:
