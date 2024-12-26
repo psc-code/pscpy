@@ -313,9 +313,8 @@ def test_read_adios2py_steps_getitem_r(test_filename):
             file.steps[2]
 
 
-@pytest.mark.xfail
-def test_read_streaming_adios2py_current_step_0(test_file):
-    assert test_file.current_step() is None
+def test_read_streaming_adios2py_current_step_outside_step(test_file):
+    assert test_file._state.current_step() is None
 
 
 # def test_single_value():
