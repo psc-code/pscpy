@@ -327,9 +327,12 @@ class StepsProxy(Iterable[File]):
                 yield file
                 file.end_step()
         elif file._mode == "rra":
-            for step in range(len(self)):
-                file.set_step(step)
-                yield file
+            for n in range(len(self)):
+                yield self[n]
+
+    def __getitem__(self, n: int) -> File:
+        self.file.set_step(n)
+        return self.file
 
     def __len__(self) -> int:
         return self.file.engine.steps()  # type: ignore[no-any-return]
