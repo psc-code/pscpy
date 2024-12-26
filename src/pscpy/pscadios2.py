@@ -148,7 +148,7 @@ class Adios2Store(AbstractDataStore):
 
     @override
     def get_variables(self) -> Frozen[str, xarray.Variable]:
-        return FrozenDict((k, self.open_store_variable(k)) for k in self.ds.keys())  # noqa: SIM118
+        return FrozenDict((k, self.open_store_variable(k)) for k in self.ds)
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self._step, self))
