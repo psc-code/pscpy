@@ -61,14 +61,14 @@ class Adios2Array(BackendArray):
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
-        self._step = step
+        self.step = step
         array = self.get_array()
         self.shape = array.shape
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
         ds = self.datastore.acquire(needs_lock)
-        step = ds.steps[self._step] if self._step is not None else ds
+        step = ds.steps[self.step] if self.step is not None else ds
         return step[self.variable_name]
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
