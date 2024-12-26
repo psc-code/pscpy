@@ -37,8 +37,8 @@ class Variable:
     @property
     def state(self) -> FileState:
         if not self._state:
-            msg = f"Variable('name={self._name}, step={self._step}) is closed."
-            raise KeyError(msg)
+            msg = f"Variable: {self._state} is closed."
+            raise ValueError(msg)
         return self._state
 
     def __bool__(self) -> bool:
@@ -274,21 +274,28 @@ class Group(Mapping[str, Any]):
         return bool(self._state)
 
     @property
+    def state(self) -> FileState:
+        if not self._state:
+            msg = f"{self} is closed"
+            raise ValueError(msg)
+        return self._state
+
+    @property
     def engine(self) -> adios2.Engine:
-        return self._state.engine
+        return self.state.engine
 
     @property
     def io(self) -> adios2.IO:
-        return self._state.io
+        return self.state.io
 
     def _keys(self) -> set[str]:
         return self.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
-        if self._state.mode == "r":
+        if self.state.mode == "r":
             return Variable(name, self._state)
 
-        assert self._state.mode == "rra"
+        assert self.state.mode == "rra"
         return Variable(name, self._state)
 
     def __len__(self) -> int:
@@ -304,7 +311,7 @@ class Step(Group):
         self._step = step
 
     def __getitem__(self, name: str) -> Variable:
-        return Variable(name, self._state, step=self._step)
+        return Variable(name, self.state, step=self._step)
 
     def step(self) -> int:
         return self._step
@@ -330,7 +337,7 @@ class File(Group):
         return AttrsProxy(self)
 
     def __repr__(self) -> str:
-        return f"adios2py.File(state={self._state})"
+        return f"adios2py.File(state={self.state})"
 
     def __enter__(self) -> File:
         logger.debug("File.__enter__()")
@@ -351,11 +358,11 @@ class File(Group):
             self.close()
 
     def close(self) -> None:
-        self._state.close()
+        self.state.close()
 
     @property
     def steps(self) -> StepsProxy:
-        return StepsProxy(self._state)
+        return StepsProxy(self.state)
 
 
 class AttrsProxy(Mapping[str, Any]):

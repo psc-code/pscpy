@@ -108,7 +108,7 @@ def test_variable_shape(pfd_file):
         var = pfd_file["jeh"]
         assert var.shape == (9, 512, 128, 1)
 
-    with pytest.raises(KeyError, match="is closed"):
+    with pytest.raises(ValueError, match="is closed"):
         assert var.shape == (9, 512, 128, 1)
 
 
@@ -117,7 +117,7 @@ def test_variable_name(pfd_file):
         var = pfd_file["jeh"]
         assert var.name == "jeh"
 
-    with pytest.raises(KeyError, match="is closed"):
+    with pytest.raises(ValueError, match="is closed"):
         assert var.name == "jeh"
 
 
@@ -126,7 +126,7 @@ def test_variable_dtype(pfd_file):
         var = pfd_file["jeh"]
         assert var.dtype == np.float32
 
-    with pytest.raises(KeyError, match="is closed"):
+    with pytest.raises(ValueError, match="is closed"):
         assert var.dtype == np.float32
 
 
