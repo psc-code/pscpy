@@ -206,9 +206,6 @@ class File(Mapping[str, Any]):
     def attrs(self) -> AttrsProxy:
         return AttrsProxy(self)
 
-    def reset(self) -> None:
-        pass
-
     def __repr__(self) -> str:
         return f"{type(self)}(filename='{self._filename}')"
 
@@ -256,10 +253,7 @@ class File(Mapping[str, Any]):
         return self.engine.current_step()  # type: ignore[no-any-return]
 
     def begin_step(self) -> adios2.StepStatus:
-        status = self.engine.begin_step()
-        if status == adios2.bindings.StepStatus.OK:
-            self.reset()
-        return status
+        return self.engine.begin_step()
 
     def end_step(self) -> None:
         return self.engine.end_step()  # type: ignore[no-any-return]
