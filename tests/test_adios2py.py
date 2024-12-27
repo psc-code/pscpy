@@ -240,14 +240,14 @@ def test_read_adios2py(test_filename, mode):
 def test_read_streaming_adios2py_resume(test_file):
     # do 0th iteration
     for step in test_file.steps:
-        scalar = test_file["scalar"][()]
+        scalar = step["scalar"][()]
         assert step.step() == 0
         assert scalar == 0
         break
 
     # then do the rest separately
     for n, step in enumerate(test_file.steps):
-        scalar = test_file["scalar"][()]
+        scalar = step["scalar"][()]
         assert step.step() == n + 1
         assert scalar == n + 1
     assert n == 3

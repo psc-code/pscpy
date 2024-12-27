@@ -87,6 +87,7 @@ def test_open_dataset_steps_from_store(test_filename):
     assert ds.keys() == set()
 
     for n, _ in enumerate(store.ds.steps):
+        store.set_step(n)
         ds = xr.open_dataset(store, engine="pscadios2_engine")
         assert ds["scalar"] == n
     assert ds.keys() == set({"scalar", "arr1d"})

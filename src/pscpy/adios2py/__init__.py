@@ -38,10 +38,13 @@ class Variable:
         if not self._state:  # file closed?
             return False
 
-        if self._state.mode == "rra" or self._step is None:
+        if self._state.mode == "rra":
             return True
 
-        return bool(self._step == self._state.current_step())
+        return bool(
+            (self._step is None and self._state.current_step() is None)
+            or self._step == self._state.current_step()
+        )
 
     @property
     def var(self) -> adios2.Variable:
@@ -123,15 +126,21 @@ class Variable:
         )
 
         var = self.var
-        if self._step is not None:
-            if self._state.mode == "rra":
+        if self._state.mode == "rra":
+            if self._step is not None:
                 var.set_step_selection([self._step, 1])
-            elif self._step != self._state.current_step():
-                msg = (
-                    f"cannot access step {self._step} in streaming mode, "
-                    f"current_step = {self._state.current_step()}"
-                )
-                raise KeyError(msg)
+        else:  # streaming mode  # noqa: PLR5501
+            if self._step is not None:
+                if self._step != self._state.current_step():
+                    msg = (
+                        f"cannot access step {self._step} in streaming mode, "
+                        f"current_step = {self._state.current_step()}"
+                    )
+                    raise KeyError(msg)
+            else:  # self_step is None  # noqa: PLR5501
+                if self._state.current_step() is not None:
+                    msg = f"cannot access step-free data since step {self._state.current_step()} is active"
+                    raise KeyError(msg)
 
         if len(sel_start) > 0:
             var.set_selection(
