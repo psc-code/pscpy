@@ -276,10 +276,6 @@ class Group(Mapping[str, Any]):
         return self._state.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
-        if self._state.mode == "r":
-            return Variable(name, self._state)
-
-        assert self._state.mode == "rra"
         return Variable(name, self._state)
 
     def __len__(self) -> int:
