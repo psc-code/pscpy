@@ -17,7 +17,7 @@ class RunInfo:
 
     def __init__(
         self,
-        file: adios2py.File,
+        file: adios2py.Group,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
     ) -> None:

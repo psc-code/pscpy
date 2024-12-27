@@ -9,7 +9,7 @@ import numpy as np
 import xarray
 from numpy.typing import ArrayLike, NDArray
 from typing_extensions import Never, override
-from xarray.backends import CachingFileManager, FileManager
+from xarray.backends import CachingFileManager, DummyFileManager, FileManager
 from xarray.backends.common import (
     AbstractDataStore,
     BackendArray,
@@ -68,7 +68,11 @@ class Adios2Array(BackendArray):
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
         ds = self.datastore.acquire(needs_lock)
-        step = ds.steps[self.step] if self.step is not None else ds
+        step = (
+            ds.steps[self.step]
+            if isinstance(ds, adios2py.File) and self.step is not None
+            else ds
+        )
         return step[self.variable_name]
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
@@ -100,7 +104,7 @@ class Adios2Store(AbstractDataStore):
     @classmethod
     def open(
         cls,
-        filename: str,
+        filename_or_obj: str | os.PathLike[Any] | adios2py.Group,
         mode: str = "r",
         lock: Lock | None = None,
         parameters: dict[str, str] | None = None,
@@ -110,24 +114,32 @@ class Adios2Store(AbstractDataStore):
             if mode == "r":
                 lock = ADIOS2_LOCK
             else:
-                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename)])  # type: ignore[no-untyped-call]
+                lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename_or_obj)])  # type: ignore[no-untyped-call]
 
-        kwargs: dict[str, Any] = {}
-        if parameters is not None:
-            kwargs["parameters"] = tuple(sorted(parameters.items()))
-        if engine_type is not None:
-            kwargs["engine_type"] = engine_type
-        manager = CachingFileManager(adios2py.File, filename, mode=mode, kwargs=kwargs)
+        if isinstance(filename_or_obj, (str, os.PathLike)):
+            kwargs: dict[str, Any] = {}
+            if parameters is not None:
+                kwargs["parameters"] = tuple(sorted(parameters.items()))
+            if engine_type is not None:
+                kwargs["engine_type"] = engine_type
+            manager: FileManager = CachingFileManager(
+                adios2py.File, filename_or_obj, mode=mode, kwargs=kwargs
+            )
+        elif isinstance(filename_or_obj, adios2py.Group):
+            manager = DummyFileManager(filename_or_obj)  # type: ignore[no-untyped-call]
+        else:
+            msg = f"Adios2Store: unknown filename_or_obj {filename_or_obj}"  # type: ignore[unreachable]
+            raise TypeError(msg)
         return cls(manager, mode=mode, lock=lock)
 
-    def acquire(self, needs_lock: bool = True) -> adios2py.File:
+    def acquire(self, needs_lock: bool = True) -> adios2py.Group:
         with self._manager.acquire_context(needs_lock) as root:  # type: ignore[no-untyped-call]
             ds = root
-        assert isinstance(ds, adios2py.File)
+        assert isinstance(ds, adios2py.Group)
         return ds
 
     @property
-    def ds(self) -> adios2py.File:
+    def ds(self) -> adios2py.Group:
         return self.acquire()
 
     @override
