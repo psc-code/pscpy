@@ -293,6 +293,10 @@ class Group(Mapping[str, Any]):
     def __iter__(self) -> Iterator[str]:
         yield from self._keys()
 
+    @property
+    def attrs(self) -> AttrsProxy:
+        return AttrsProxy(self._state)
+
 
 class Step(Group):
     def __init__(self, state: FileState, step: int) -> None:
@@ -320,10 +324,6 @@ class File(Group):
     ) -> None:
         logger.debug("File.__init__(%s, %s)", filename_or_obj, mode)
         super().__init__(FileState(filename_or_obj, mode, parameters, engine_type))
-
-    @property
-    def attrs(self) -> AttrsProxy:
-        return AttrsProxy(self._state)
 
     def __repr__(self) -> str:
         return f"adios2py.File(state={self._state})"
