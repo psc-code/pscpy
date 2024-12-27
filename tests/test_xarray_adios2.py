@@ -92,6 +92,15 @@ def test_open_dataset_steps_from_Step(test_filename, mode):
             assert ds["scalar"] == n
 
 
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_open_dataset_from_Step(test_filename, mode):
+    with adios2py.File(test_filename, mode) as file:
+        for n, step in enumerate(file.steps):
+            ds = xr.open_dataset(step, engine="pscadios2_engine")
+            assert ds.keys() == set({"scalar", "arr1d"})
+            assert ds["scalar"] == n
+
+
 # def test_ggcm_i2c():
 #     ds = xr.open_dataset(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
