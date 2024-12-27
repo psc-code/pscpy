@@ -219,6 +219,10 @@ class FileState:
         self._engine = None
         self._io = None
 
+    def __del__(self) -> None:
+        if self:
+            self.close()
+
     def _assert_is_not_closed(self) -> None:
         if not self:
             msg = f"{self} is closed."
@@ -340,11 +344,6 @@ class File(Group):
     ) -> None:
         logger.debug("File.__exit__()")
         self.close()
-
-    def __del__(self) -> None:
-        logger.debug("File.__del__()")
-        if self:  # is open?
-            self.close()
 
     def close(self) -> None:
         self._state.close()
