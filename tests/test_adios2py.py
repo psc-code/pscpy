@@ -337,7 +337,7 @@ def test_write_read_mixed(tmp_path, mode):
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
 def test_write_read(tmp_path, mode):
-    filename = tmp_path / "mixed.bp"
+    filename = tmp_path / "steps.bp"
     with adios2.Stream(str(filename), mode="w") as file:
         for step, _ in enumerate(file.steps(5)):
             file.write("scalar", step)
