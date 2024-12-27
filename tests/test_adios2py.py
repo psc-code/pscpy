@@ -317,6 +317,37 @@ def test_read_streaming_adios2py_current_step_outside_step(test_file):
     assert test_file._state.current_step() is None
 
 
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_write_read_mixed(tmp_path, mode):
+    filename = tmp_path / "mixed.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        file.write("scalar", -1)
+        arr1d = np.arange(5)
+        file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+
+        # these steps just get lost...
+        for step, _ in enumerate(file.steps(5)):
+            file.write("scalar", step)
+            arr1d = np.arange(10)
+            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+
+    with adios2.Stream(str(filename), mode=mode) as file:
+        assert file.num_steps() == 1
+
+
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_write_read(tmp_path, mode):
+    filename = tmp_path / "mixed.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            file.write("scalar", step)
+            arr1d = np.arange(10)
+            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+
+    with adios2.Stream(str(filename), mode=mode) as file:
+        assert file.num_steps() == 5
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
