@@ -202,7 +202,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             if not isinstance(filename, str):
                 raise NotImplementedError()
 
-            store = Adios2Store.open(filename)
+            store = Adios2Store.open(filename, mode="rra")
 
         store_entrypoint = StoreBackendEntrypoint()
 

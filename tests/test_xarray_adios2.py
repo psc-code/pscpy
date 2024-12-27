@@ -79,7 +79,7 @@ def test_pfd_moments():
 
 def test_open_dataset_steps(test_filename):
     ds = xr.open_dataset(test_filename)
-    assert ds.keys() == set()
+    assert ds.keys() == set({"scalar", "arr1d"})
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
