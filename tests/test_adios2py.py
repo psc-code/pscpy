@@ -62,7 +62,7 @@ def test_with(pfd_file):
 
 
 def test_file_repr(pfd_file):
-    print(repr(pfd_file))
+    assert repr(pfd_file)
 
 
 def test_keys(pfd_file):
@@ -203,7 +203,6 @@ def test_get_attribute(pfd_file):
 
 def test_write_streaming(tmp_path):
     with adios2.Stream(str(tmp_path / "test_streaming.bp"), mode="w") as file:
-        print("file", file)
         for step, _ in enumerate(file.steps(5)):
             file.write("scalar", step)
 
