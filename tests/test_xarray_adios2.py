@@ -96,7 +96,7 @@ def test_open_dataset_steps_from_Step(test_filename, mode):
 def test_open_dataset_from_Step(test_filename, mode):
     with adios2py.File(test_filename, mode) as file:
         for n, step in enumerate(file.steps):
-            ds = xr.open_dataset(step, engine="pscadios2_engine")
+            ds = xr.open_dataset(step)
             assert ds.keys() == set({"scalar", "arr1d"})
             assert ds["scalar"] == n
 

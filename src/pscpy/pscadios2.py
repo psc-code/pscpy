@@ -249,7 +249,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
 
-        return isinstance(filename_or_obj, tuple) and len(filename_or_obj) == 2
+        return isinstance(filename_or_obj, (Adios2Store, adios2py.Group))
 
     @override
     def open_datatree(
