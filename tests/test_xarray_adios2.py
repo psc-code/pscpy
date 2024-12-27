@@ -3,13 +3,25 @@ from __future__ import annotations
 import os
 from typing import Any
 
+import adios2
 import numpy as np
+import pytest
 import xarray as xr
 
 import pscpy
+from pscpy.pscadios2 import Adios2Store
 
-# import adios2
-# from pscpy.pscadios2 import Adios2Store
+
+@pytest.fixture
+def test_filename(tmp_path):
+    filename = tmp_path / "test_file.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            file.write("scalar", step)
+            arr1d = np.arange(10)
+            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+
+    return filename
 
 
 def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
@@ -62,6 +74,34 @@ def test_pfd_moments():
     assert ds.all_1st.sizes == dict(x=1, y=128, z=512, comp_all_1st=26)  # noqa: C408
     assert "rho_i" in ds
     assert np.all(ds.rho_i == ds.all_1st.isel(comp_all_1st=13))
+
+
+def test_open_dataset_steps(test_filename):
+    ds = xr.open_dataset(test_filename)
+    assert ds.keys() == set()
+
+
+def test_open_dataset_steps_from_store(test_filename):
+    store = Adios2Store.open(test_filename, mode="r")
+    ds = xr.open_dataset(store, engine="pscadios2_engine")
+    assert ds.keys() == set()
+
+    for n, _ in enumerate(store.ds.steps):
+        ds = xr.open_dataset(store, engine="pscadios2_engine")
+        assert ds["scalar"] == n
+    assert ds.keys() == set({"scalar", "arr1d"})
+
+
+def test_open_dataset_steps_from_store_rra(test_filename):
+    store = Adios2Store.open(test_filename, mode="rra")
+    ds = xr.open_dataset(store, engine="pscadios2_engine")
+    assert ds.keys() == set({"scalar", "arr1d"})
+
+    for n, _ in enumerate(store.ds.steps):
+        store.set_step(n)
+        ds = xr.open_dataset(store, engine="pscadios2_engine")
+        assert ds["scalar"] == n
+    assert ds.keys() == set({"scalar", "arr1d"})
 
 
 # def test_ggcm_i2c():
