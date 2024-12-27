@@ -81,22 +81,14 @@ def test_open_dataset_steps(test_filename):
     assert ds.keys() == set()
 
 
-def test_open_dataset_steps_from_store(test_filename):
-    store = Adios2Store.open(test_filename, mode="r")
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_open_dataset_steps_from_store(test_filename, mode):
+    store = Adios2Store.open(test_filename, mode=mode)
     ds = xr.open_dataset(store, engine="pscadios2_engine")
-    assert ds.keys() == set()
-
-    for n, _ in enumerate(store.ds.steps):
-        store.set_step(n)
-        ds = xr.open_dataset(store, engine="pscadios2_engine")
-        assert ds["scalar"] == n
-    assert ds.keys() == set({"scalar", "arr1d"})
-
-
-def test_open_dataset_steps_from_store_rra(test_filename):
-    store = Adios2Store.open(test_filename, mode="rra")
-    ds = xr.open_dataset(store, engine="pscadios2_engine")
-    assert ds.keys() == set({"scalar", "arr1d"})
+    if mode == "r":
+        assert ds.keys() == set()
+    elif mode == "rra":
+        assert ds.keys() == set({"scalar", "arr1d"})
 
     for n, _ in enumerate(store.ds.steps):
         store.set_step(n)
