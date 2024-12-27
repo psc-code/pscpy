@@ -289,6 +289,9 @@ class Group(Mapping[str, Any]):
         return self._state.io.available_variables().keys()  # type: ignore[no-any-return]
 
     def __getitem__(self, name: str) -> Variable:
+        if self._state.mode == "r":
+            msg = "in streaming mode, need to read by step"
+            raise RuntimeError(msg)
         return Variable(name, self._state)
 
     def __len__(self) -> int:
