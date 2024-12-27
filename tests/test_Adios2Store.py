@@ -61,7 +61,3 @@ def test_rra(test_filename):
     with Adios2Store.open(test_filename, mode="rra") as store:
         vars, _ = store.load()
         assert vars["scalar"] == 0
-
-        store.set_step(3)
-        vars, _ = store.load()
-        assert vars["scalar"] == 3

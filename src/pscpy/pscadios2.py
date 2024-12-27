@@ -56,24 +56,16 @@ class Adios2Array(BackendArray):
     def __init__(
         self,
         variable_name: str,
-        step: int | None,
         datastore: Adios2Store,
     ) -> None:
         self.variable_name = variable_name
         self.datastore = datastore
-        self.step = step
         array = self.get_array()
         self.shape = array.shape
         self.dtype = array.dtype
 
     def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
-        ds = self.datastore.acquire(needs_lock)
-        step = (
-            ds.steps[self.step]
-            if isinstance(ds, adios2py.File) and self.step is not None
-            else ds
-        )
-        return step[self.variable_name]
+        return self.datastore.acquire(needs_lock)[self.variable_name]
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
         return indexing.explicit_indexing_adapter(
@@ -99,7 +91,6 @@ class Adios2Store(AbstractDataStore):
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]
         # keep track of attributes that belong with a variable
         self._var_attrs: set[str] = set()
-        self._step: int | None = None
 
     @classmethod
     def open(
@@ -147,7 +138,7 @@ class Adios2Store(AbstractDataStore):
         return FrozenDict((k, self.open_store_variable(k)) for k in self.ds)
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
-        data = indexing.LazilyIndexedArray(Adios2Array(var_name, self._step, self))
+        data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
         attr_names = [
             name for name in self.ds.attrs if name.startswith(f"{var_name}::")
         ]
@@ -177,9 +168,6 @@ class Adios2Store(AbstractDataStore):
     def load(self):  # type: ignore[no-untyped-def]
         self._var_attrs = set()
         return super().load()  # type:ignore[no-untyped-call]
-
-    def set_step(self, step: int) -> None:
-        self._step = step
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
