@@ -10,7 +10,7 @@ from pscpy import adios2py
 
 @pytest.fixture
 def pfd_file():
-    return adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")
+    return adios2py.File(pscpy.sample_dir / "pfd.000000400.bp", mode="rra")
 
 
 @pytest.fixture
