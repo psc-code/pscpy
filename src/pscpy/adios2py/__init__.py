@@ -138,13 +138,16 @@ class Variable:
         arr_shape: list[int] = []
 
         for arg in args[0:1]:
-            assert isinstance(arg, slice)
-            start, stop, step = arg.indices(steps)
-            assert start < stop
-            assert step == 1
-            step_start = start
-            step_count = stop - start
-            arr_shape.append(step_count)
+            if isinstance(arg, slice):
+                assert isinstance(arg, slice)
+                start, stop, step = arg.indices(steps)
+                assert start < stop
+                assert step == 1
+                sel_start.append(start)
+                sel_count.append(stop - start)
+                arr_shape.append(stop - start)
+            else:
+                raise NotImplementedError
 
         for d, arg in enumerate(args[1:]):
             if isinstance(arg, slice):
@@ -176,16 +179,16 @@ class Variable:
 
         var = self.var
 
-        var.set_step_selection((step_start, step_count))
+        var.set_step_selection((sel_start[0], sel_count[0]))
 
-        if sel_start:
+        if len(sel_start) > 1:
             var.set_selection(
-                (self._maybe_reverse(sel_start), self._maybe_reverse(sel_count))
+                (self._maybe_reverse(sel_start[1:]), self._maybe_reverse(sel_count[1:]))
             )
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
-        assert arr.size == step_count * np.prod(sel_count)
+        assert arr.size == np.prod(sel_count)
         self._state.engine.get(var, arr, adios2.bindings.Mode.Sync)
         return arr
 
