@@ -139,18 +139,20 @@ class Variable:
 
         steps = self._steps()
         steps = 1 if steps is None else steps
-        assert isinstance(step_slice, slice)
-        step_start, step_stop, step_step = step_slice.indices(steps)
-        assert step_step == 1
-        assert step_start < step_stop
-        step_count = step_stop - step_start
-        step_selection = (step_start, step_count)
-        arr_shape = [step_count, *arr_shape]
+        if isinstance(step_slice, slice):
+            arg: SupportsInt | slice = step_slice
+            assert isinstance(arg, slice)
+            start, stop, step = arg.indices(steps)
+            assert start < stop
+            assert step == 1
+            step_start = start
+            step_count = stop - start
+            arr_shape.append(step_count)
 
         for d, arg in enumerate(args):
             if isinstance(arg, slice):
                 start, stop, step = arg.indices(var_shape[d])
-                assert stop > start
+                assert start < stop
                 assert step == 1
                 sel_start[d] = start
                 sel_count[d] = stop - start
@@ -177,8 +179,7 @@ class Variable:
 
         var = self.var
 
-        if step_selection is not None:
-            var.set_step_selection(step_selection)
+        var.set_step_selection((step_start, step_count))
 
         if sel_start.size:
             var.set_selection(
