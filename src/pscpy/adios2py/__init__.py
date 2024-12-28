@@ -57,12 +57,10 @@ class Variable:
     def _maybe_reverse(self, dims: Sequence[int]) -> Sequence[int]:
         return dims[::-1] if self._reverse_dims else dims
 
-    def _steps(self) -> int | None:
-        if self._state.mode != "rra":
-            return None
-
-        if self._step is not None:
-            return None
+    def _steps(self) -> int:
+        # in streaming mode, can only access one step
+        if self._state.mode == "r":
+            return 1
 
         steps: int = self.var.steps()
         assert steps == self._state.engine.steps()
@@ -72,8 +70,11 @@ class Variable:
     @property
     def shape(self) -> tuple[int, ...]:
         shape = tuple(self._maybe_reverse(self.var.shape()))
-        if (steps := self._steps()) is not None:
-            shape = (steps, *shape)
+        if self._state.mode == "r":
+            assert self._step is not None
+
+        if self._step is None:
+            shape = (self._steps(), *shape)
         return shape
 
     @property
@@ -111,10 +112,8 @@ class Variable:
             return self._getitem((0, *args))
 
         # rra mode
-        steps = self._steps()
-        if steps is None:
-            step = self._step if self._step is not None else 0
-            return self._getitem((step, *args))
+        if self._step is not None:
+            return self._getitem((self._step, *args))
 
         return self._getitem(args)
 
@@ -122,17 +121,18 @@ class Variable:
         self,
         args: tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
-        var_shape = (1, *self.shape) if self._steps() is None else self.shape
+        var_shape = (self._steps(), *self.var.shape())
+
         sel: list[tuple[int, int]] = []  # list of (start, count)
         arr_shape: list[int] = []
 
+        assert len(args) <= len(var_shape)
         for arg, length in itertools.zip_longest(args, var_shape):
             if arg is None:
                 # if too fewer slices/indices were passed, pad with full slices
                 sel.append((0, length))
                 arr_shape.append(length)
             elif isinstance(arg, slice):
-                assert isinstance(arg, slice)
                 start, stop, step = arg.indices(length)
                 assert start < stop
                 assert step == 1
