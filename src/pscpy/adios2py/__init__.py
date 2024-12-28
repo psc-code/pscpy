@@ -145,7 +145,12 @@ class Variable:
         shape = tuple(self.var.shape())
         sel_start = np.zeros_like(shape)
         sel_count = np.zeros_like(shape)
-        arr_shape = []
+        arr_shape: list[int] = []
+
+        step_count = 1
+        if step_selection is not None:
+            _, step_count = step_selection
+            arr_shape = [step_count, *arr_shape]
 
         for d, arg in enumerate(args):
             if isinstance(arg, slice):
@@ -177,11 +182,8 @@ class Variable:
 
         var = self.var
 
-        step_count = 1
         if step_selection is not None:
-            _, step_count = step_selection
             var.set_step_selection(step_selection)
-            arr_shape = [step_count, *arr_shape]
 
         if len(sel_start) > 0:
             var.set_selection(
@@ -190,6 +192,7 @@ class Variable:
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
+        assert arr.size == step_count * np.prod(sel_count)
         self._state.engine.get(var, arr, adios2.bindings.Mode.Sync)
         return arr
 
