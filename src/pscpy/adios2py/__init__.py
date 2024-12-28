@@ -129,18 +129,15 @@ class Variable:
         if not isinstance(args, tuple):
             args = (args,)
 
-        step_slice, *rem_args = args
-        args = tuple(rem_args)
+        steps = self._steps()
+        steps = 1 if steps is None else steps
 
-        var_shape = tuple(self.var.shape())
+        var_shape = tuple([steps, *self.var.shape()])  # noqa: C409
         sel_start: list[int] = []
         sel_count: list[int] = []
         arr_shape: list[int] = []
 
-        steps = self._steps()
-        steps = 1 if steps is None else steps
-        if isinstance(step_slice, slice):
-            arg: SupportsInt | slice = step_slice
+        for arg in args[0:1]:
             assert isinstance(arg, slice)
             start, stop, step = arg.indices(steps)
             assert start < stop
@@ -149,9 +146,9 @@ class Variable:
             step_count = stop - start
             arr_shape.append(step_count)
 
-        for d, arg in enumerate(args):
+        for d, arg in enumerate(args[1:]):
             if isinstance(arg, slice):
-                start, stop, step = arg.indices(var_shape[d])
+                start, stop, step = arg.indices(var_shape[d + 1])
                 assert start < stop
                 assert step == 1
                 sel_start.append(start)
