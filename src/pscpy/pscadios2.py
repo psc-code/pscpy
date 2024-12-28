@@ -147,6 +147,8 @@ class Adios2Store(AbstractDataStore):
         }
         if "dimensions" in attrs:
             dims: tuple[str, ...] = attrs["dimensions"].split()
+            if isinstance(self.ds, adios2py.Step):
+                dims = dims[1:]
         elif data.ndim == 5:  # for psc compatibility
             dims = ("step", f"comp_{var_name}", "z", "y", "x")
         else:  # if we have no info, not much we can do...

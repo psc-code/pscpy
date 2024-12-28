@@ -25,6 +25,21 @@ def test_filename(tmp_path):
     return filename
 
 
+@pytest.fixture
+def test_filename_2(tmp_path):
+    filename = tmp_path / "test_file_2.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            file.write("step", step)
+            file.write("time", 10.0 * step)
+
+            arr1d = np.arange(10)
+            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+            file.write_attribute("dimensions", "time len_10", variable_name="arr1d")
+
+    return filename
+
+
 def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
     return xr.open_dataset(
         filename,
@@ -99,6 +114,24 @@ def test_open_dataset_from_Step(test_filename, mode):
             ds = xr.open_dataset(step)
             assert ds.keys() == set({"scalar", "arr1d"})
             assert ds["scalar"] == n
+
+
+def test_open_dataset_2(test_filename_2):
+    ds = xr.open_dataset(test_filename_2)
+    assert ds.keys() == set({"step", "arr1d"})
+    assert ds.step.shape == (5,)
+    assert ds.arr1d.shape == (5, 10)
+    assert ds.coords.keys() == set({"time"})
+    assert ds.time.shape == (5,)
+
+
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_open_dataset_2_step(test_filename_2, mode):
+    with adios2py.File(test_filename_2, mode=mode) as file:
+        for _, step in enumerate(file.steps):
+            ds = xr.open_dataset(Adios2Store.open(step))
+            assert ds.keys() == set({"step", "time", "arr1d"})
+            assert ds.coords.keys() == set({})
 
 
 # def test_ggcm_i2c():
