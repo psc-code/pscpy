@@ -348,6 +348,14 @@ def test_write_read(tmp_path, mode):
         assert file.num_steps() == 5
 
 
+def test_read_steps(test_filename):
+    with adios2py.File(test_filename, mode="rra") as file:
+        assert len(file.steps) == 5
+        var_scalar = file["scalar"]
+        assert var_scalar.shape == (5,)
+        # assert np.all(var_scalar[:] == np.arange(5))
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"

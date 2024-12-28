@@ -57,9 +57,26 @@ class Variable:
     def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
         return dims[::-1] if self._reverse_dims else dims
 
+    def _steps(self) -> int | None:
+        if self._state.mode != "rra":
+            return None
+
+        if self._step is not None:
+            return None
+
+        steps: int = self.var.steps()
+        assert steps == self._state.engine.steps()
+        if steps == 1:
+            return None  # TODO: is that the best way to handle a single step?
+
+        return steps
+
     @property
     def shape(self) -> tuple[int, ...]:
-        return self._maybe_reverse(tuple(self.var.shape()))
+        shape = self._maybe_reverse(tuple(self.var.shape()))
+        if (steps := self._steps()) is not None:
+            shape = (steps, *shape)
+        return shape
 
     @property
     def name(self) -> str:
@@ -92,8 +109,21 @@ class Variable:
 
             return self._getitem_step_selection(step_selection=None, args=args)
 
-        step_selection = (self._step, 1) if self._step is not None else None
-        return self._getitem_step_selection(step_selection=step_selection, args=args)
+        # rra mode
+        if self._steps() is None:
+            step_selection = (self._step, 1) if self._step is not None else None
+            return self._getitem_step_selection(
+                step_selection=step_selection, args=args
+            )
+        # separate first arg
+        if not isinstance(args, tuple):
+            args = (args,)
+
+        first, *rem_args = args
+        # print("first = ", first)
+        args = tuple(rem_args)
+        arr = self._getitem_step_selection(step_selection=None, args=args)
+        return arr[np.newaxis,]
 
     def _getitem_step_selection(
         self,
@@ -103,7 +133,8 @@ class Variable:
         if not isinstance(args, tuple):
             args = (args,)
 
-        shape = self.shape
+        # print("_getitem args", args, "step_selection", step_selection)
+        shape = tuple(self.var.shape())
         sel_start = np.zeros_like(shape)
         sel_count = np.zeros_like(shape)
         arr_shape = []
