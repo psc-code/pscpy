@@ -25,12 +25,12 @@ class Variable:
         step: int | None = None,
     ) -> None:
         logger.debug("Variable.__init__(name=%s, state=%s)", name, state)
+        self._name = name
+        self._state = state
         if not state.io.inquire_variable(name):
             msg = f"Variable '{name}' not found in {state}"
             raise KeyError(msg)
 
-        self._name = name
-        self._state = state
         self._step = step
         self._reverse_dims = self._is_reverse_dims()
 
@@ -150,7 +150,10 @@ class Variable:
 
         sel_start, sel_count = zip(*sel)
 
-        self.var.set_step_selection((sel_start[0], sel_count[0]))
+        if self._state.mode == "rra":
+            self.var.set_step_selection((sel_start[0], sel_count[0]))
+        else:  # mode == "r"
+            assert (sel_start[0], sel_count[0]) == (0, 1)
 
         if len(sel) > 1:
             self.var.set_selection(

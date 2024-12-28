@@ -370,6 +370,16 @@ def test_read_steps(test_filename):
             assert np.all(var_arr2d[n] == ref2d)
 
 
+# def test_read_steps_r():
+#     with adios2py.File(
+#         "../ggcm-gitm-coupling-tools/data/coupling0001/ref/iono_to_sigmas.bp", mode="r"
+#     ) as file:
+#         for n, step in enumerate(file.steps):
+#             var = step["pot"]
+#             assert var.shape == (61, 181)
+#             assert np.any(var[:])
+
+
 # def test_single_value():
 #     with adios2py.File(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
