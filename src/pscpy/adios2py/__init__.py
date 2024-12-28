@@ -155,21 +155,12 @@ class Variable:
                 sel_start[d] = start
                 sel_count[d] = stop - start
                 arr_shape.append(sel_count[d])
-                continue
-
-            try:
-                idx = int(arg)
-            except ValueError:
-                pass
             else:
+                idx = int(arg)
                 if idx < 0:
                     idx += shape[d]
                 sel_start[d] = idx
                 sel_count[d] = 1
-                continue
-
-            error_message = f"invalid args to __getitem__: {args}"
-            raise RuntimeError(error_message)
 
         for d in range(len(args), len(shape)):
             sel_start[d] = 0
