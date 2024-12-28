@@ -107,38 +107,30 @@ class Variable:
                 )
                 raise KeyError(msg)
 
-            return self._getitem_step_selection(step_slice=slice(0, 1), args=args)
+            return self._getitem_step_selection(slice(0, 1), *args)
 
         # rra mode
         steps = self._steps()
         if steps is None:
             if self._step is not None:
                 arr = self._getitem_step_selection(
-                    step_slice=slice(self._step, self._step + 1), args=args
+                    slice(self._step, self._step + 1), *args
                 )
                 return arr[0]
 
-            return self._getitem_step_selection(step_slice=slice(0, 1), args=args)
-        # separate first arg
-        if not isinstance(args, tuple):
-            args = (args,)
+            return self._getitem_step_selection(slice(0, 1), *args)
 
-        first, *rem_args = args
-        assert isinstance(first, slice)
-        start, stop, step = first.indices(steps)
-        assert step == 1
-        assert start < stop
-        args = tuple(rem_args)
-        return self._getitem_step_selection(step_slice=slice(start, stop), args=args)
+        return self._getitem_step_selection(args)
 
     def _getitem_step_selection(
         self,
-        step_slice: slice,
         args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
         if not isinstance(args, tuple):
             args = (args,)
 
+        step_slice, *rem_args = args
+        args = tuple(rem_args)
         # print("_getitem args", args, "step_slice", step_slice)
         shape = tuple(self.var.shape())
         sel_start = np.zeros_like(shape)
@@ -147,6 +139,7 @@ class Variable:
 
         steps = self._steps()
         steps = 1 if steps is None else steps
+        assert isinstance(step_slice, slice)
         step_start, step_stop, step_step = step_slice.indices(steps)
         assert step_step == 1
         assert step_start < step_stop
