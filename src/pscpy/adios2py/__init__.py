@@ -98,6 +98,9 @@ class Variable:
         self,
         args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
+        if not isinstance(args, tuple):
+            args = (args,)
+
         if self._state.mode == "r":
             assert self._step is not None
             if self._step != self._state.current_step():
@@ -107,28 +110,20 @@ class Variable:
                 )
                 raise KeyError(msg)
 
-            return self._getitem_step_selection(slice(0, 1), *args)
+            return self._getitem((0, *args))
 
         # rra mode
         steps = self._steps()
         if steps is None:
-            if self._step is not None:
-                arr = self._getitem_step_selection(
-                    slice(self._step, self._step + 1), *args
-                )
-                return arr[0]
+            step = self._step if self._step is not None else 0
+            return self._getitem((step, *args))
 
-            return self._getitem_step_selection(slice(0, 1), *args)
+        return self._getitem(args)
 
-        return self._getitem_step_selection(args)
-
-    def _getitem_step_selection(
+    def _getitem(
         self,
-        args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
+        args: tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
-        if not isinstance(args, tuple):
-            args = (args,)
-
         steps = self._steps()
         steps = 1 if steps is None else steps
 
