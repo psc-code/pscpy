@@ -124,10 +124,7 @@ class Variable:
         self,
         args: tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
-        steps = self._steps()
-        steps = 1 if steps is None else steps
-
-        var_shape = tuple([steps, *self.var.shape()])  # noqa: C409
+        var_shape = (1, *self.shape) if self._steps() is None else self.shape
         sel_start: list[int] = []
         sel_count: list[int] = []
         arr_shape: list[int] = []
