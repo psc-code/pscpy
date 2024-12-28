@@ -129,10 +129,15 @@ class Variable:
         sel_count: list[int] = []
         arr_shape: list[int] = []
 
-        for d, arg in enumerate(args):
-            if isinstance(arg, slice):
+        for arg, length in itertools.zip_longest(args, var_shape):
+            if arg is None:
+                # if too fewer slices/indices were passed, pad with ":"
+                sel_start.append(0)
+                sel_count.append(length)
+                arr_shape.append(length)
+            elif isinstance(arg, slice):
                 assert isinstance(arg, slice)
-                start, stop, step = arg.indices(var_shape[d])
+                start, stop, step = arg.indices(length)
                 assert start < stop
                 assert step == 1
                 sel_start.append(start)
@@ -141,14 +146,9 @@ class Variable:
             else:
                 idx = int(arg)
                 if idx < 0:
-                    idx += var_shape[d]
+                    idx += length
                 sel_start.append(idx)
                 sel_count.append(1)
-
-        for d in range(len(args), len(var_shape)):
-            sel_start.append(0)
-            sel_count.append(var_shape[d])
-            arr_shape.append(sel_count[d])
 
         logger.debug(
             "arr_shape = %s, sel_start = %s, sel_count = %s step=%s",
