@@ -137,21 +137,10 @@ class Variable:
         sel_count: list[int] = []
         arr_shape: list[int] = []
 
-        for arg in args[0:1]:
+        for d, arg in enumerate(args):
             if isinstance(arg, slice):
                 assert isinstance(arg, slice)
-                start, stop, step = arg.indices(steps)
-                assert start < stop
-                assert step == 1
-                sel_start.append(start)
-                sel_count.append(stop - start)
-                arr_shape.append(stop - start)
-            else:
-                raise NotImplementedError
-
-        for d, arg in enumerate(args[1:]):
-            if isinstance(arg, slice):
-                start, stop, step = arg.indices(var_shape[d + 1])
+                start, stop, step = arg.indices(var_shape[d])
                 assert start < stop
                 assert step == 1
                 sel_start.append(start)
