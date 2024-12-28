@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import logging
 import os
-from collections.abc import Generator, Mapping
+from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from types import TracebackType
 from typing import Any, Iterable, Iterator, SupportsInt
@@ -54,7 +54,7 @@ class Variable:
             raise ValueError(msg)
         return var
 
-    def _maybe_reverse(self, dims: tuple[int, ...]) -> tuple[int, ...]:
+    def _maybe_reverse(self, dims: Sequence[int]) -> Sequence[int]:
         return dims[::-1] if self._reverse_dims else dims
 
     def _steps(self) -> int | None:
@@ -73,7 +73,7 @@ class Variable:
 
     @property
     def shape(self) -> tuple[int, ...]:
-        shape = self._maybe_reverse(tuple(self.var.shape()))
+        shape = tuple(self._maybe_reverse(self.var.shape()))
         if (steps := self._steps()) is not None:
             shape = (steps, *shape)
         return shape
@@ -133,8 +133,8 @@ class Variable:
         args = tuple(rem_args)
 
         var_shape = tuple(self.var.shape())
-        sel_start = np.zeros_like(var_shape)
-        sel_count = np.zeros_like(var_shape)
+        sel_start: list[int] = []
+        sel_count: list[int] = []
         arr_shape: list[int] = []
 
         steps = self._steps()
@@ -154,19 +154,19 @@ class Variable:
                 start, stop, step = arg.indices(var_shape[d])
                 assert start < stop
                 assert step == 1
-                sel_start[d] = start
-                sel_count[d] = stop - start
-                arr_shape.append(sel_count[d])
+                sel_start.append(start)
+                sel_count.append(stop - start)
+                arr_shape.append(stop - start)
             else:
                 idx = int(arg)
                 if idx < 0:
                     idx += var_shape[d]
-                sel_start[d] = idx
-                sel_count[d] = 1
+                sel_start.append(idx)
+                sel_count.append(1)
 
         for d in range(len(args), len(var_shape)):
-            sel_start[d] = 0
-            sel_count[d] = var_shape[d]
+            sel_start.append(0)
+            sel_count.append(var_shape[d])
             arr_shape.append(sel_count[d])
 
         logger.debug(
@@ -181,7 +181,7 @@ class Variable:
 
         var.set_step_selection((step_start, step_count))
 
-        if sel_start.size:
+        if sel_start:
             var.set_selection(
                 (self._maybe_reverse(sel_start), self._maybe_reverse(sel_count))
             )
