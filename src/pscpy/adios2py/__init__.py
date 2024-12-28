@@ -78,7 +78,20 @@ class Variable:
         return self[()]  # type: ignore [no-any-return]
 
     def __getitem__(
-        self, args: SupportsInt | slice | tuple[SupportsInt | slice, ...]
+        self,
+        args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
+    ) -> NDArray[Any]:
+        step_selection = None
+        if self._state.mode == "rra":
+            assert self._step is not None
+            step_selection = (self._step, 1)
+
+        return self._getitem_step_selection(step_selection, args)
+
+    def _getitem_step_selection(
+        self,
+        step_selection: tuple[int, int] | None,
+        args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
         if not isinstance(args, tuple):
             args = (args,)
@@ -126,10 +139,10 @@ class Variable:
         )
 
         var = self.var
-        if self._state.mode == "rra":
-            if self._step is not None:
-                var.set_step_selection([self._step, 1])
-        else:  # streaming mode  # noqa: PLR5501
+        if step_selection is not None:
+            var.set_step_selection([self._step, 1])
+
+        if self._state.mode == "r":
             if self._step is not None:
                 if self._step != self._state.current_step():
                     msg = (
