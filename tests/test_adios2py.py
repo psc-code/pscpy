@@ -87,7 +87,7 @@ def test_attrs_iter(pfd_file):
 def test_get_variable(pfd_file):
     var = pfd_file["jeh"]
     assert var.name == "jeh"
-    assert var.shape == (9, 512, 128, 1)
+    assert var.shape == (1, 9, 512, 128, 1)
     assert var.dtype == np.float32
 
 
@@ -100,7 +100,7 @@ def test_variable_bool(pfd_file):
     with pfd_file:
         var = pfd_file["jeh"]
         assert var
-        assert var.shape == (9, 512, 128, 1)
+        assert var.shape == (1, 9, 512, 128, 1)
 
     assert not var
 
@@ -108,7 +108,7 @@ def test_variable_bool(pfd_file):
 def test_variable_shape(pfd_file):
     with pfd_file:
         var = pfd_file["jeh"]
-        assert var.shape == (9, 512, 128, 1)
+        assert var.shape == (1, 9, 512, 128, 1)
 
     with pytest.raises(ValueError, match="is closed"):
         assert var.shape == (9, 512, 128, 1)
@@ -137,7 +137,7 @@ def test_variable_repr(pfd_file):
         var = pfd_file["jeh"]
         assert (
             repr(var)
-            == "adios2py.Variable(name=jeh, shape=(9, 512, 128, 1), dtype=float32"
+            == "adios2py.Variable(name=jeh, shape=(1, 9, 512, 128, 1), dtype=float32"
         )
 
     assert repr(var) == "adios2py.Variable(name=jeh) (closed)"

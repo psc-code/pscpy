@@ -66,8 +66,6 @@ class Variable:
 
         steps: int = self.var.steps()
         assert steps == self._state.engine.steps()
-        if steps == 1:
-            return None  # TODO: is that the best way to handle a single step?
 
         return steps
 

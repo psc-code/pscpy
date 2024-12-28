@@ -139,18 +139,16 @@ class Adios2Store(AbstractDataStore):
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
-        attr_names = [
-            name for name in self.ds.attrs if name.startswith(f"{var_name}::")
-        ]
+        attr_names = [name for name in self.ds.attrs if name.startswith(f"{var_name}/")]
         self._var_attrs |= set(attr_names)
         attrs = {
-            name.removeprefix(f"{var_name}::"): self.ds.attrs[name]  # type: ignore[attr-defined]
+            name.removeprefix(f"{var_name}/"): self.ds.attrs[name]  # type: ignore[attr-defined]
             for name in attr_names
         }
-        if "xr-dims" in attrs:
-            dims: tuple[str, ...] = attrs["xr-dims"].split(";")
-        elif data.ndim == 4:  # for psc compatibility
-            dims = (f"comp_{var_name}", "z", "y", "x")
+        if "dimensions" in attrs:
+            dims: tuple[str, ...] = attrs["dimensions"].split()
+        elif data.ndim == 5:  # for psc compatibility
+            dims = ("step", f"comp_{var_name}", "z", "y", "x")
         else:  # if we have no info, not much we can do...
             dims = tuple(f"len_{dim}" for dim in data.shape)
         return xarray.Variable(dims, data, attrs)
@@ -218,6 +216,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         )
 
         if species_names is not None:
+            ds = ds.squeeze("step")
             field_to_component = psc.get_field_to_component(species_names)
 
             data_vars = {}
