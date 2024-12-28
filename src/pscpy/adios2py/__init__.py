@@ -131,10 +131,10 @@ class Variable:
 
         step_slice, *rem_args = args
         args = tuple(rem_args)
-        # print("_getitem args", args, "step_slice", step_slice)
-        shape = tuple(self.var.shape())
-        sel_start = np.zeros_like(shape)
-        sel_count = np.zeros_like(shape)
+
+        var_shape = tuple(self.var.shape())
+        sel_start = np.zeros_like(var_shape)
+        sel_count = np.zeros_like(var_shape)
         arr_shape: list[int] = []
 
         steps = self._steps()
@@ -149,7 +149,7 @@ class Variable:
 
         for d, arg in enumerate(args):
             if isinstance(arg, slice):
-                start, stop, step = arg.indices(shape[d])
+                start, stop, step = arg.indices(var_shape[d])
                 assert stop > start
                 assert step == 1
                 sel_start[d] = start
@@ -158,13 +158,13 @@ class Variable:
             else:
                 idx = int(arg)
                 if idx < 0:
-                    idx += shape[d]
+                    idx += var_shape[d]
                 sel_start[d] = idx
                 sel_count[d] = 1
 
-        for d in range(len(args), len(shape)):
+        for d in range(len(args), len(var_shape)):
             sel_start[d] = 0
-            sel_count[d] = shape[d]
+            sel_count[d] = var_shape[d]
             arr_shape.append(sel_count[d])
 
         logger.debug(
@@ -180,7 +180,7 @@ class Variable:
         if step_selection is not None:
             var.set_step_selection(step_selection)
 
-        if len(sel_start) > 0:
+        if sel_start.size:
             var.set_selection(
                 (self._maybe_reverse(sel_start), self._maybe_reverse(sel_count))
             )
