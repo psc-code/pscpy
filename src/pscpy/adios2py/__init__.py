@@ -107,7 +107,7 @@ class Variable:
                 )
                 raise KeyError(msg)
 
-            return self._getitem_step_selection(step_selection=None, args=args)
+            return self._getitem_step_selection(step_selection=(0, 1), args=args)
 
         # rra mode
         steps = self._steps()
@@ -118,7 +118,7 @@ class Variable:
                 )
                 return arr[0]
 
-            return self._getitem_step_selection(step_selection=None, args=args)
+            return self._getitem_step_selection(step_selection=(0, 1), args=args)
         # separate first arg
         if not isinstance(args, tuple):
             args = (args,)
