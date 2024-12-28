@@ -81,12 +81,19 @@ class Variable:
         self,
         args: SupportsInt | slice | tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
-        step_selection = None
-        if self._state.mode == "rra":
+        if self._state.mode == "r":
             assert self._step is not None
-            step_selection = (self._step, 1)
+            if self._step != self._state.current_step():
+                msg = (
+                    f"cannot access step {self._step} in streaming mode, "
+                    f"current_step = {self._state.current_step()}"
+                )
+                raise KeyError(msg)
 
-        return self._getitem_step_selection(step_selection, args)
+            return self._getitem_step_selection(step_selection=None, args=args)
+
+        step_selection = (self._step, 1) if self._step is not None else None
+        return self._getitem_step_selection(step_selection=step_selection, args=args)
 
     def _getitem_step_selection(
         self,
@@ -141,19 +148,6 @@ class Variable:
         var = self.var
         if step_selection is not None:
             var.set_step_selection([self._step, 1])
-
-        if self._state.mode == "r":
-            if self._step is not None:
-                if self._step != self._state.current_step():
-                    msg = (
-                        f"cannot access step {self._step} in streaming mode, "
-                        f"current_step = {self._state.current_step()}"
-                    )
-                    raise KeyError(msg)
-            else:  # self_step is None  # noqa: PLR5501
-                if self._state.current_step() is not None:
-                    msg = f"cannot access step-free data since step {self._state.current_step()} is active"
-                    raise KeyError(msg)
 
         if len(sel_start) > 0:
             var.set_selection(
