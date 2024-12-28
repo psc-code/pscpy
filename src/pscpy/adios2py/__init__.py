@@ -125,52 +125,42 @@ class Variable:
         args: tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
         var_shape = (1, *self.shape) if self._steps() is None else self.shape
-        sel_start: list[int] = []
-        sel_count: list[int] = []
+        sel: list[tuple[int, int]] = []  # list of (start, count)
         arr_shape: list[int] = []
 
         for arg, length in itertools.zip_longest(args, var_shape):
             if arg is None:
-                # if too fewer slices/indices were passed, pad with ":"
-                sel_start.append(0)
-                sel_count.append(length)
+                # if too fewer slices/indices were passed, pad with full slices
+                sel.append((0, length))
                 arr_shape.append(length)
             elif isinstance(arg, slice):
                 assert isinstance(arg, slice)
                 start, stop, step = arg.indices(length)
                 assert start < stop
                 assert step == 1
-                sel_start.append(start)
-                sel_count.append(stop - start)
+                sel.append((start, stop - start))
                 arr_shape.append(stop - start)
             else:
                 idx = int(arg)
                 if idx < 0:
                     idx += length
-                sel_start.append(idx)
-                sel_count.append(1)
+                sel.append((idx, 1))
 
-        logger.debug(
-            "arr_shape = %s, sel_start = %s, sel_count = %s step=%s",
-            arr_shape,
-            sel_start,
-            sel_count,
-            self._step,
-        )
+        logger.debug("arr_shape = %s, sel = %s", arr_shape, sel)
 
-        var = self.var
+        sel_start, sel_count = zip(*sel)
 
-        var.set_step_selection((sel_start[0], sel_count[0]))
+        self.var.set_step_selection((sel_start[0], sel_count[0]))
 
-        if len(sel_start) > 1:
-            var.set_selection(
+        if len(sel) > 1:
+            self.var.set_selection(
                 (self._maybe_reverse(sel_start[1:]), self._maybe_reverse(sel_count[1:]))
             )
 
         order = "F" if self._reverse_dims else "C"
         arr = np.empty(arr_shape, dtype=self.dtype, order=order)
         assert arr.size == np.prod(sel_count)
-        self._state.engine.get(var, arr, adios2.bindings.Mode.Sync)
+        self._state.engine.get(self.var, arr, adios2.bindings.Mode.Sync)
         return arr
 
     def __repr__(self) -> str:
