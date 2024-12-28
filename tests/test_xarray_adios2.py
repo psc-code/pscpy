@@ -33,9 +33,12 @@ def test_filename_2(tmp_path):
             file.write("step", step)
             file.write("time", 10.0 * step)
 
+            x = np.linspace(0, 1, 10)
+            file.write("x", x, x.shape, [0], x.shape)
+            file.write_attribute("dimensions", "redundant x", variable_name="x")
             arr1d = np.arange(10)
             file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
-            file.write_attribute("dimensions", "time len_10", variable_name="arr1d")
+            file.write_attribute("dimensions", "time x", variable_name="arr1d")
 
     return filename
 
@@ -121,7 +124,7 @@ def test_open_dataset_2(test_filename_2):
     assert ds.keys() == set({"step", "arr1d"})
     assert ds.step.shape == (5,)
     assert ds.arr1d.shape == (5, 10)
-    assert ds.coords.keys() == set({"time"})
+    assert ds.coords.keys() == set({"time", "x"})
     assert ds.time.shape == (5,)
 
 
@@ -131,7 +134,7 @@ def test_open_dataset_2_step(test_filename_2, mode):
         for _, step in enumerate(file.steps):
             ds = xr.open_dataset(Adios2Store.open(step))
             assert ds.keys() == set({"step", "time", "arr1d"})
-            assert ds.coords.keys() == set({})
+            assert ds.coords.keys() == set({"x"})
 
 
 # def test_ggcm_i2c():

@@ -218,7 +218,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         )
 
         if "redundant" in ds.dims:
-            ds = ds.squeeze("redundant")
+            ds = ds.isel(redundant=0)
 
         if species_names is not None:
             ds = ds.squeeze("step")
