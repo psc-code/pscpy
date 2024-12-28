@@ -21,6 +21,8 @@ def test_filename(tmp_path):
             file.write("scalar", step)
             arr1d = np.arange(10)
             file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+            arr2d = (np.arange(12) + step).reshape(3, 4)
+            file.write("arr2d", arr2d, arr2d.shape, [0, 0], arr2d.shape)
 
     return filename
 
@@ -351,12 +353,21 @@ def test_write_read(tmp_path, mode):
 def test_read_steps(test_filename):
     with adios2py.File(test_filename, mode="rra") as file:
         assert len(file.steps) == 5
+
         var_scalar = file["scalar"]
         assert var_scalar.shape == (5,)
         assert np.all(var_scalar[:] == np.arange(5))
+
         var_arr1d = file["arr1d"]
         assert var_arr1d.shape == (5, 10)
         assert np.all(var_arr1d == np.arange(10))
+
+        var_arr2d = file["arr2d"]
+        assert var_arr2d.shape == (5, 3, 4)
+
+        for n in range(len(file.steps)):
+            ref2d = (np.arange(12) + n).reshape(3, 4)
+            assert np.all(var_arr2d[n] == ref2d)
 
 
 # def test_single_value():
