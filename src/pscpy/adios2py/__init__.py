@@ -110,20 +110,28 @@ class Variable:
             return self._getitem_step_selection(step_selection=None, args=args)
 
         # rra mode
-        if self._steps() is None:
-            step_selection = (self._step, 1) if self._step is not None else None
-            return self._getitem_step_selection(
-                step_selection=step_selection, args=args
-            )
+        steps = self._steps()
+        if steps is None:
+            if self._step is not None:
+                arr = self._getitem_step_selection(
+                    step_selection=(self._step, 1), args=args
+                )
+                return arr[0]
+
+            return self._getitem_step_selection(step_selection=None, args=args)
         # separate first arg
         if not isinstance(args, tuple):
             args = (args,)
 
         first, *rem_args = args
-        # print("first = ", first)
+        assert isinstance(first, slice)
+        start, stop, step = first.indices(steps)
+        assert step == 1
+        assert start < stop
         args = tuple(rem_args)
-        arr = self._getitem_step_selection(step_selection=None, args=args)
-        return arr[np.newaxis,]
+        return self._getitem_step_selection(
+            step_selection=(start, stop - start), args=args
+        )
 
     def _getitem_step_selection(
         self,
@@ -177,8 +185,12 @@ class Variable:
         )
 
         var = self.var
+
+        step_count = 1
         if step_selection is not None:
-            var.set_step_selection([self._step, 1])
+            _, step_count = step_selection
+            var.set_step_selection(step_selection)
+            arr_shape = [step_count, *arr_shape]
 
         if len(sel_start) > 0:
             var.set_selection(

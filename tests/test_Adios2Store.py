@@ -60,4 +60,4 @@ def test_vars_attrs(test_store):
 def test_rra(test_filename):
     with Adios2Store.open(test_filename, mode="rra") as store:
         vars, _ = store.load()
-        assert vars["scalar"] == 0
+        assert np.all(vars["scalar"] == np.arange(5))
