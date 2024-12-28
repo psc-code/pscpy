@@ -356,7 +356,7 @@ def test_read_steps(test_filename):
 
         var_scalar = file["scalar"]
         assert var_scalar.shape == (5,)
-        assert np.all(var_scalar[:] == np.arange(5))
+        assert np.all(var_scalar == np.arange(5))
 
         var_arr1d = file["arr1d"]
         assert var_arr1d.shape == (5, 10)
