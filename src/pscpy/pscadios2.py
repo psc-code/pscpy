@@ -215,6 +215,9 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             decode_timedelta=decode_timedelta,
         )
 
+        if "redundant" in ds.dims:
+            ds = ds.squeeze("redundant")
+
         if species_names is not None:
             ds = ds.squeeze("step")
             field_to_component = psc.get_field_to_component(species_names)
