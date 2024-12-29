@@ -70,11 +70,10 @@ class Variable:
     @property
     def shape(self) -> tuple[int, ...]:
         shape = tuple(self._maybe_reverse(self.var.shape()))
-        if self._state.mode == "r":
-            assert self._step is not None
-
         if self._step is None:
+            assert self._state.mode == "rra"
             shape = (self._steps(), *shape)
+
         return shape
 
     @property
@@ -121,7 +120,7 @@ class Variable:
         self,
         args: tuple[SupportsInt | slice, ...],
     ) -> NDArray[Any]:
-        var_shape = (self._steps(), *self.var.shape())
+        var_shape = self.shape if self._step is None else (self._steps(), *self.shape)
 
         sel: list[tuple[int, int]] = []  # list of (start, count)
         arr_shape: list[int] = []
