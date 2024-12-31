@@ -192,6 +192,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         corner: ArrayLike | None = None,
         species_names: Iterable[str]
         | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
+        decode_openggcm=False,
     ) -> xarray.Dataset:
         if isinstance(filename_or_obj, Adios2Store):
             store = filename_or_obj
@@ -222,6 +223,9 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
         if species_names is not None:
             ds = decode_psc(ds, store.ds, species_names, length, corner)
+
+        if decode_openggcm:
+            ds = _decode_openggcm(ds)
 
         return ds
 
@@ -270,5 +274,19 @@ def decode_psc(
             "z": ("z", run_info.z),
         }
         ds = ds.assign_coords(coords)
+
+    return ds
+
+
+def _decode_openggcm(
+    ds: xarray.Dataset,
+) -> xarray.Dataset:
+    # add colats and mlts as coordinates
+    # FIXME? not clear that this is the best place to do this
+    if (
+        not {"colats", "mlts"} <= ds.coords.keys()
+        and {"lats", "longs"} <= ds.coords.keys()
+    ):
+        ds = ds.assign_coords(colats=90 - ds.lats, mlts=(ds.longs + 180) * 24 / 360)
 
     return ds
