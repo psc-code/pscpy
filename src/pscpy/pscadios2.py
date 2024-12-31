@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable, Mapping, Protocol
 
 import numpy as np
 import xarray
@@ -26,7 +26,7 @@ from xarray.backends.store import StoreBackendEntrypoint
 from xarray.core import indexing
 from xarray.core.datatree import DataTree
 from xarray.core.types import ReadBuffer
-from xarray.core.utils import Frozen, FrozenDict
+from xarray.core.utils import FrozenDict
 
 from . import adios2py, psc
 
@@ -134,7 +134,7 @@ class Adios2Store(AbstractDataStore):
         return self.acquire()
 
     @override
-    def get_variables(self) -> Frozen[str, xarray.Variable]:
+    def get_variables(self) -> Mapping[str, xarray.Variable]:
         return FrozenDict((k, self.open_store_variable(k)) for k in self.ds)
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
@@ -156,7 +156,7 @@ class Adios2Store(AbstractDataStore):
         return xarray.Variable(dims, data, attrs)
 
     @override
-    def get_attrs(self) -> Frozen[str, Any]:
+    def get_attrs(self) -> Mapping[str, Any]:
         attrs_remaining = self.ds.attrs.keys() - self._var_attrs
         return FrozenDict((name, self.ds.attrs[name]) for name in attrs_remaining)
 
@@ -165,9 +165,11 @@ class Adios2Store(AbstractDataStore):
         raise NotImplementedError()
 
     @override
-    def load(self):  # type: ignore[no-untyped-def]
+    def load(
+        self,
+    ) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
         self._var_attrs = set()
-        return super().load()  # type:ignore[no-untyped-call]
+        return super().load()  # type:ignore[no-untyped-call,no-any-return]
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
