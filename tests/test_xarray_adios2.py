@@ -156,6 +156,16 @@ def test_open_dataset_3(test_filename_3):
     assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.000200000")
 
 
+@pytest.mark.parametrize("mode", ["r", "rra"])
+def test_open_dataset_3_step(test_filename_3, mode):
+    with adios2py.File(test_filename_3, mode=mode) as file:
+        for n, step in enumerate(file.steps):
+            ds = xr.open_dataset(Adios2Store.open(step), decode_openggcm=True)
+            assert ds.time == np.datetime64(
+                "2013-03-17T13:00:00.000200000"
+            ) + np.timedelta64(n, "s")
+
+
 # def test_ggcm_i2c():
 #     ds = xr.open_dataset(
 #         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
