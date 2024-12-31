@@ -43,6 +43,18 @@ def test_filename_2(tmp_path):
     return filename
 
 
+@pytest.fixture
+def test_filename_3(tmp_path):
+    filename = tmp_path / "test_file_3.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            file.write("step", step)
+            time = np.array([2013, 3, 17, 13, 0, step, 200], dtype=np.int32)
+            file.write("time", time, time.shape, [0], time.shape)
+
+    return filename
+
+
 def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
     return xr.open_dataset(
         filename,
@@ -135,6 +147,13 @@ def test_open_dataset_2_step(test_filename_2, mode):
             ds = xr.open_dataset(Adios2Store.open(step))
             assert ds.keys() == set({"step", "time", "arr1d"})
             assert ds.coords.keys() == set({"x"})
+
+
+def test_open_dataset_3(test_filename_3):
+    ds = xr.open_dataset(test_filename_3, decode_openggcm=True)
+    assert ds.time.shape == (5,)
+    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.000200000")
+    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.000200000")
 
 
 # def test_ggcm_i2c():

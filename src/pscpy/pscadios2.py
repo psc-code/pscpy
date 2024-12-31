@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import os
 import pathlib
@@ -283,6 +284,13 @@ def _decode_psc(
 def _decode_openggcm(
     ds: xarray.Dataset,
 ) -> xarray.Dataset:
+    if "time" in ds:  # noqa: SIM102
+        # decode to_gitm specific (FIXME?) specific way of storing time as array of 7 ints
+        if ds.time.dtype == np.int32 and ds.time.ndim == 2 and ds.time.shape[1] == 7:
+            ds.coords["time"] = xarray.Variable(
+                ds.time.dims[0], [dt.datetime(*vals) for vals in ds.time.values]
+            )
+
     # add colats and mlts as coordinates
     # FIXME? not clear that this is the best place to do this
     if (
