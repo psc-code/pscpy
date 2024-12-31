@@ -222,7 +222,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             ds = ds.isel(redundant=0)
 
         if species_names is not None:
-            ds = decode_psc(ds, store.ds, species_names, length, corner)
+            ds = _decode_psc(ds, store.ds, species_names, length, corner)
 
         if decode_openggcm:
             ds = _decode_openggcm(ds)
@@ -249,7 +249,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         raise NotImplementedError()
 
 
-def decode_psc(
+def _decode_psc(
     ds: xarray.Dataset,
     file: adios2py.Group,
     species_names: Iterable[str],
