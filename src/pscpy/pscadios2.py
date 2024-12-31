@@ -221,26 +221,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             ds = ds.isel(redundant=0)
 
         if species_names is not None:
-            ds = ds.squeeze("step")
-            field_to_component = psc.get_field_to_component(species_names)
-
-            data_vars = {}
-            for var_name in ds:
-                if var_name in field_to_component:
-                    for field, component in field_to_component[var_name].items():  # type: ignore[index]
-                        data_vars[field] = ds[var_name].isel(
-                            {f"comp_{var_name}": component}
-                        )
-            ds = ds.assign(data_vars)
-
-        if length is not None:
-            run_info = psc.RunInfo(store.ds, length=length, corner=corner)
-            coords = {
-                "x": ("x", run_info.x),
-                "y": ("y", run_info.y),
-                "z": ("z", run_info.z),
-            }
-            ds = ds.assign_coords(coords)
+            ds = decode_psc(ds, store.ds, species_names, length, corner)
 
         return ds
 
@@ -262,3 +243,32 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         **kwargs: Any,
     ) -> DataTree:
         raise NotImplementedError()
+
+
+def decode_psc(
+    ds: xarray.Dataset,
+    file: adios2py.Group,
+    species_names: Iterable[str],
+    length: ArrayLike | None = None,
+    corner: ArrayLike | None = None,
+) -> xarray.Dataset:
+    ds = ds.squeeze("step")
+    field_to_component = psc.get_field_to_component(species_names)
+
+    data_vars = {}
+    for var_name in ds:
+        if var_name in field_to_component:
+            for field, component in field_to_component[var_name].items():  # type: ignore[index]
+                data_vars[field] = ds[var_name].isel({f"comp_{var_name}": component})
+    ds = ds.assign(data_vars)
+
+    if length is not None:
+        run_info = psc.RunInfo(file, length=length, corner=corner)
+        coords = {
+            "x": ("x", run_info.x),
+            "y": ("y", run_info.y),
+            "z": ("z", run_info.z),
+        }
+        ds = ds.assign_coords(coords)
+
+    return ds
