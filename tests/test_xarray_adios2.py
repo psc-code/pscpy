@@ -55,6 +55,18 @@ def test_filename_3(tmp_path):
     return filename
 
 
+@pytest.fixture
+def test_filename_4(tmp_path):
+    filename = tmp_path / "test_file_4.bp"
+    with adios2.Stream(str(filename), mode="w") as file:
+        for step, _ in enumerate(file.steps(5)):
+            time = np.array(step)
+            file.write("time", time)
+            file.write_attribute("units", "seconds since 1970-01-01", "time")
+
+    return filename
+
+
 def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
     return xr.open_dataset(
         filename,
@@ -152,8 +164,8 @@ def test_open_dataset_2_step(test_filename_2, mode):
 def test_open_dataset_3(test_filename_3):
     ds = xr.open_dataset(test_filename_3, decode_openggcm=True)
     assert ds.time.shape == (5,)
-    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.000200000")
-    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.000200000")
+    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.000200")
+    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.000200")
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
@@ -162,8 +174,15 @@ def test_open_dataset_3_step(test_filename_3, mode):
         for n, step in enumerate(file.steps):
             ds = xr.open_dataset(Adios2Store.open(step), decode_openggcm=True)
             assert ds.time == np.datetime64(
-                "2013-03-17T13:00:00.000200000"
+                "2013-03-17T13:00:00.000200"
             ) + np.timedelta64(n, "s")
+
+
+def test_open_dataset_4(test_filename_4):
+    ds = xr.open_dataset(test_filename_4, decode_openggcm=True)
+    print(ds)
+    assert ds.time[0] == np.datetime64("1970-01-01T00:00:00.000")
+    assert ds.time[1] == np.datetime64("1970-01-01T00:00:01.000")
 
 
 # def test_ggcm_i2c():
