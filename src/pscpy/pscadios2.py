@@ -148,7 +148,8 @@ class Adios2Store(AbstractDataStore):
         }
         if "dimensions" in attrs:
             dims: tuple[str, ...] = attrs["dimensions"].split()
-            if isinstance(self.ds, adios2py.Step):
+            del attrs["dimensions"]
+            if len(dims) == data.ndim + 1:
                 dims = dims[1:]
             return xarray.Variable(dims, data, attrs)
 
