@@ -189,7 +189,7 @@ def test_encode_time_array():
     time = xr.Variable(
         dims=(),
         data=np.array(np.datetime64("1970-01-02T03:04:05", "ns")),
-        encoding=dict(dtype="int32", time_array=True),  # noqa: C408
+        encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
     )
     time1d = xr.Variable(
         dims=("time",),
@@ -199,16 +199,19 @@ def test_encode_time_array():
                 np.datetime64("1970-01-02T03:04:05.600", "ns"),
             ]
         ),
-        encoding=dict(dtype="int32", time_array=True),  # noqa: C408
+        encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
     )
     vars = {"time": time, "time1d": time1d}
     attrs = {}
 
     vars, attrs = pscadios2._encode_openggcm(vars, attrs)
 
+    assert vars["time"].attrs["units"] == "time_array"
     assert np.all(
         vars["time"].values == np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32)
     )
+
+    assert vars["time1d"].attrs["units"] == "time_array"
     assert np.all(
         vars["time1d"].values
         == np.array(

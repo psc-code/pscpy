@@ -328,13 +328,16 @@ def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
 
 
 def _encode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
-    if var.encoding.get("time_array", False):
+    if var.encoding.get("units") == "time_array":
         new_var = xarray.Variable(
             dims=("time_array", *var.dims),
             data=_dt64_to_time_array(
-                var.to_numpy(), var.encoding.get("dtype", "int32")
+                var.to_numpy(),
+                var.encoding.get("dtype", "int32"),
             ),
+            attrs=var.attrs.copy(),
         )
+        new_var.attrs["units"] = "time_array"
     else:
         new_var = var
     return new_var
