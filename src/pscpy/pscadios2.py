@@ -346,7 +346,7 @@ def _time_array_to_dt64(times: ArrayLike) -> ArrayLike:
     ]
 
 
-def _decode_openggcm_variable(var: xarray.Variable, name: str) -> xarray.Variable:
+def _decode_openggcm_variable(var: xarray.Variable, name: str) -> xarray.Variable:  # noqa: ARG001
     if var.attrs.get("units") == "time_array":
         times = var.to_numpy().tolist()
         if var.ndim == 1:
@@ -357,17 +357,6 @@ def _decode_openggcm_variable(var: xarray.Variable, name: str) -> xarray.Variabl
         attrs = var.attrs.copy()
         attrs.pop("units")
         new_var = xarray.Variable(dims=var.dims[1:], data=times, attrs=attrs)
-    elif name == "time":
-        # decode to_gitm specific (FIXME?) specific way of storing time as array of 7 ints
-        if var.dtype == np.int32 and var.shape[-1] == 7:
-            if var.ndim == 1:
-                new_var = xarray.Variable((), dt.datetime(*var.to_numpy()))
-            elif var.ndim == 2:
-                new_var = xarray.Variable(
-                    var.dims[0], [dt.datetime(*vals) for vals in var.to_numpy()]
-                )
-        else:
-            new_var = var
     else:
         new_var = var
     return new_var

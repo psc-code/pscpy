@@ -49,8 +49,11 @@ def test_filename_3(tmp_path):
     with adios2.Stream(str(filename), mode="w") as file:
         for step, _ in enumerate(file.steps(5)):
             file.write("step", step)
+            file.write_attribute("dimensions", "step", "step")
             time = np.array([2013, 3, 17, 13, 0, step, 200], dtype=np.int32)
             file.write("time", time, time.shape, [0], time.shape)
+            file.write_attribute("dimensions", "step time_array", "time")
+            file.write_attribute("units", "time_array", "time")
 
     return filename
 
@@ -164,8 +167,8 @@ def test_open_dataset_2_step(test_filename_2, mode):
 def test_open_dataset_3(test_filename_3):
     ds = xr.open_dataset(test_filename_3, decode_openggcm=True)
     assert ds.time.shape == (5,)
-    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.000200")
-    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.000200")
+    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.200")
+    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.200")
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
@@ -173,9 +176,9 @@ def test_open_dataset_3_step(test_filename_3, mode):
     with adios2py.File(test_filename_3, mode=mode) as file:
         for n, step in enumerate(file.steps):
             ds = xr.open_dataset(Adios2Store.open(step), decode_openggcm=True)
-            assert ds.time == np.datetime64(
-                "2013-03-17T13:00:00.000200"
-            ) + np.timedelta64(n, "s")
+            assert ds.time == np.datetime64("2013-03-17T13:00:00.200") + np.timedelta64(
+                n, "s"
+            )
 
 
 def test_open_dataset_4(test_filename_4):
