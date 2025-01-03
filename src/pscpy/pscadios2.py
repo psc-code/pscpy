@@ -327,17 +327,52 @@ def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
     ).T
 
 
+def _time_array_to_dt64(times: ArrayLike) -> ArrayLike:
+    return [
+        np.datetime64(
+            dt.datetime(
+                year=time[0],
+                month=time[1],
+                day=time[2],
+                hour=time[3],
+                minute=time[4],
+                second=time[5],
+                microsecond=time[6] * 1000,
+            ),
+            "ns",
+        )
+        for time in times
+    ]
+
+
+def _decode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
+    if var.attrs.get("units") == "time_array":
+        times = var.to_numpy().tolist()
+        if var.ndim == 1:
+            times = _time_array_to_dt64([times])[0]
+        else:
+            times = _time_array_to_dt64(times)
+
+        attrs = var.attrs.copy()
+        attrs.pop("units")
+        new_var = xarray.Variable(dims=var.dims[1:], data=times, attrs=attrs)
+    else:
+        new_var = var
+    return new_var
+
+
 def _encode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
     if var.encoding.get("units") == "time_array":
+        attrs = var.attrs.copy()
+        attrs["units"] = "time_array"
         new_var = xarray.Variable(
-            dims=("time_array", *var.dims),
+            dims=(*var.dims, "time_array"),
             data=_dt64_to_time_array(
                 var.to_numpy(),
                 var.encoding.get("dtype", "int32"),
             ),
-            attrs=var.attrs.copy(),
+            attrs=attrs,
         )
-        new_var.attrs["units"] = "time_array"
     else:
         new_var = var
     return new_var

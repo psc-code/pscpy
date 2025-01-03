@@ -185,38 +185,67 @@ def test_open_dataset_4(test_filename_4):
     assert ds.time[1] == np.datetime64("1970-01-01T00:00:01.000")
 
 
-def test_encode_time_array():
+def test_encode_time_array_0d():
     time = xr.Variable(
         dims=(),
-        data=np.array(np.datetime64("1970-01-02T03:04:05", "ns")),
+        data=np.datetime64("1970-01-02T03:04:05", "ns"),
         encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
     )
+
+    time = pscadios2._encode_openggcm_variable(time)
+
+    assert time.attrs["units"] == "time_array"
+    assert time.sizes == dict(time_array=7)  # noqa: C408
+    assert time.dtype == np.int32
+    assert np.all(time == [1970, 1, 2, 3, 4, 5, 0])
+
+
+def test_encode_time_array_1d():
     time1d = xr.Variable(
         dims=("time",),
-        data=np.array(
-            [
-                np.datetime64("1970-01-02T03:04:05", "ns"),
-                np.datetime64("1970-01-02T03:04:05.600", "ns"),
-            ]
-        ),
+        data=[
+            np.datetime64("1970-01-02T03:04:05", "ns"),
+            np.datetime64("1970-01-02T03:04:05.600", "ns"),
+        ],
         encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
     )
-    vars = {"time": time, "time1d": time1d}
-    attrs = {}
 
-    vars, attrs = pscadios2._encode_openggcm(vars, attrs)
+    time1d = pscadios2._encode_openggcm_variable(time1d)
 
-    assert vars["time"].attrs["units"] == "time_array"
-    assert np.all(
-        vars["time"].values == np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32)
+    assert time1d.attrs["units"] == "time_array"
+    assert time1d.sizes == dict(time=2, time_array=7)  # noqa: C408
+    assert np.all(time1d == [[1970, 1, 2, 3, 4, 5, 0], [1970, 1, 2, 3, 4, 5, 600]])
+
+
+def test_decode_time_array_0d():
+    time = xr.Variable(
+        dims=("time_array",),
+        data=np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32),
+        attrs=dict(units="time_array"),  # noqa: C408
     )
+    time = pscadios2._decode_openggcm_variable(time)
 
-    assert vars["time1d"].attrs["units"] == "time_array"
-    assert np.all(
-        vars["time1d"].values
-        == np.array(
+    assert "units" not in time.attrs
+    assert np.all(time.to_numpy() == np.datetime64("1970-01-02T03:04:05", "ns"))
+
+
+def test_decode_time_array_1d():
+    time = xr.Variable(
+        dims=("time_array", "time"),
+        data=np.array(
             [[1970, 1, 2, 3, 4, 5, 0], [1970, 1, 2, 3, 4, 5, 600]], dtype=np.int32
-        )
+        ),
+        attrs=dict(units="time_array"),  # noqa: C408
+    )
+    time = pscadios2._decode_openggcm_variable(time)
+
+    assert "units" not in time.attrs
+    assert np.all(
+        time
+        == [
+            np.datetime64("1970-01-02T03:04:05", "ns"),
+            np.datetime64("1970-01-02T03:04:05.600", "ns"),
+        ]
     )
 
 
