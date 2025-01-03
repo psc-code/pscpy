@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 import os
 import pathlib
-from typing import Any, Iterable, Mapping, Protocol
+from typing import Any, Iterable, Mapping, Protocol, Sequence
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -305,22 +305,22 @@ def _decode_openggcm(
 
 
 def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
-    times = pd.to_datetime(times)
+    dt_times = pd.to_datetime(times)
     return np.array(
         [
-            times.year,
-            times.month,
-            times.day,
-            times.hour,
-            times.minute,
-            times.second,
-            times.microsecond // 1000,
+            dt_times.year,
+            dt_times.month,
+            dt_times.day,
+            dt_times.hour,
+            dt_times.minute,
+            dt_times.second,
+            dt_times.microsecond // 1000,
         ],
         dtype=dtype,
     ).T
 
 
-def _time_array_to_dt64(times: ArrayLike) -> ArrayLike:
+def _time_array_to_dt64(times: Iterable[Sequence[int]]) -> Sequence[np.datetime64]:
     return [
         np.datetime64(
             dt.datetime(
@@ -340,15 +340,15 @@ def _time_array_to_dt64(times: ArrayLike) -> ArrayLike:
 
 def _decode_openggcm_variable(var: xarray.Variable, name: str) -> xarray.Variable:  # noqa: ARG001
     if var.attrs.get("units") == "time_array":
-        times = var.to_numpy().tolist()
+        times: Any = var.to_numpy().tolist()
         if var.ndim == 1:
-            times = _time_array_to_dt64([times])[0]
+            dt_times = _time_array_to_dt64([times])[0]
         else:
-            times = _time_array_to_dt64(times)
+            dt_times = _time_array_to_dt64(times)  # type: ignore[assignment]
 
         attrs = var.attrs.copy()
         attrs.pop("units")
-        new_var = xarray.Variable(dims=var.dims[1:], data=times, attrs=attrs)
+        new_var = xarray.Variable(dims=var.dims[1:], data=dt_times, attrs=attrs)
     else:
         new_var = var
     return new_var
@@ -358,6 +358,9 @@ def _encode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
     if var.encoding.get("units") == "time_array":
         attrs = var.attrs.copy()
         attrs["units"] = "time_array"
+        if "_FillValue" in attrs:
+            attrs.pop("_FillValue")
+
         new_var = xarray.Variable(
             dims=(*var.dims, "time_array"),
             data=_dt64_to_time_array(
