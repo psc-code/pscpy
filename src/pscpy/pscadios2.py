@@ -177,7 +177,9 @@ class Adios2Store(AbstractDataStore):
     ) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
         self._var_attrs = set()
         vars, attrs = super().load()  # type: ignore[no-untyped-call]
-        return decode(vars, attrs)
+        # TODO, this isn't really the right place to do this -- more of a hack
+        # to get the decoding hooked in while we still have vars, attrs
+        return _decode_openggcm_vars_attrs(vars, attrs)
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
@@ -302,16 +304,6 @@ def _decode_openggcm(
     return ds
 
 
-def decode(
-    vars: Mapping[str, xarray.Variable], attrs: Mapping[str, Any]
-) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
-    new_vars = {
-        name: _decode_openggcm_variable(var, name) for name, var in vars.items()
-    }
-
-    return new_vars, attrs
-
-
 def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
     times = pd.to_datetime(times)
     return np.array(
@@ -383,5 +375,15 @@ def _encode_openggcm(
     vars: Mapping[str, xarray.Variable], attrs: Mapping[str, Any]
 ) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
     new_vars = {name: _encode_openggcm_variable(var) for name, var in vars.items()}
+
+    return new_vars, attrs
+
+
+def _decode_openggcm_vars_attrs(
+    vars: Mapping[str, xarray.Variable], attrs: Mapping[str, Any]
+) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
+    new_vars = {
+        name: _decode_openggcm_variable(var, name) for name, var in vars.items()
+    }
 
     return new_vars, attrs
