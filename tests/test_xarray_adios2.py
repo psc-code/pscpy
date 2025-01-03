@@ -223,7 +223,7 @@ def test_decode_time_array_0d():
         data=np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32),
         attrs=dict(units="time_array"),  # noqa: C408
     )
-    time = pscadios2._decode_openggcm_variable(time)
+    time = pscadios2._decode_openggcm_variable(time, "time")
 
     assert "units" not in time.attrs
     assert np.all(time.to_numpy() == np.datetime64("1970-01-02T03:04:05", "ns"))
@@ -237,7 +237,7 @@ def test_decode_time_array_1d():
         ),
         attrs=dict(units="time_array"),  # noqa: C408
     )
-    time = pscadios2._decode_openggcm_variable(time)
+    time = pscadios2._decode_openggcm_variable(time, "time")
 
     assert "units" not in time.attrs
     assert np.all(

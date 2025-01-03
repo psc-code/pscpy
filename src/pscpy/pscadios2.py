@@ -176,7 +176,8 @@ class Adios2Store(AbstractDataStore):
         self,
     ) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
         self._var_attrs = set()
-        return super().load()  # type:ignore[no-untyped-call,no-any-return]
+        vars, attrs = super().load()  # type: ignore[no-untyped-call]
+        return decode(vars, attrs)
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
@@ -290,16 +291,6 @@ def _decode_psc(
 def _decode_openggcm(
     ds: xarray.Dataset,
 ) -> xarray.Dataset:
-    if "time" in ds:  # noqa: SIM102
-        # decode to_gitm specific (FIXME?) specific way of storing time as array of 7 ints
-        if ds.time.dtype == np.int32 and ds.time.shape[-1] == 7:
-            if ds.time.ndim == 1:
-                ds["time"] = xarray.Variable((), dt.datetime(*ds.time.to_numpy()))
-            elif ds.time.ndim == 2:
-                ds["time"] = xarray.Variable(
-                    ds.time.dims[0], [dt.datetime(*vals) for vals in ds.time.to_numpy()]
-                )
-
     # add colats and mlts as coordinates
     # FIXME? not clear that this is the best place to do this
     if (
@@ -309,6 +300,16 @@ def _decode_openggcm(
         ds = ds.assign_coords(colats=90 - ds.lats, mlts=(ds.longs + 180) * 24 / 360)
 
     return ds
+
+
+def decode(
+    vars: Mapping[str, xarray.Variable], attrs: Mapping[str, Any]
+) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
+    new_vars = {
+        name: _decode_openggcm_variable(var, name) for name, var in vars.items()
+    }
+
+    return new_vars, attrs
 
 
 def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
@@ -345,7 +346,7 @@ def _time_array_to_dt64(times: ArrayLike) -> ArrayLike:
     ]
 
 
-def _decode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
+def _decode_openggcm_variable(var: xarray.Variable, name: str) -> xarray.Variable:
     if var.attrs.get("units") == "time_array":
         times = var.to_numpy().tolist()
         if var.ndim == 1:
@@ -356,6 +357,17 @@ def _decode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
         attrs = var.attrs.copy()
         attrs.pop("units")
         new_var = xarray.Variable(dims=var.dims[1:], data=times, attrs=attrs)
+    elif name == "time":
+        # decode to_gitm specific (FIXME?) specific way of storing time as array of 7 ints
+        if var.dtype == np.int32 and var.shape[-1] == 7:
+            if var.ndim == 1:
+                new_var = xarray.Variable((), dt.datetime(*var.to_numpy()))
+            elif var.ndim == 2:
+                new_var = xarray.Variable(
+                    var.dims[0], [dt.datetime(*vals) for vals in var.to_numpy()]
+                )
+        else:
+            new_var = var
     else:
         new_var = var
     return new_var
@@ -379,8 +391,8 @@ def _encode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
 
 
 def _encode_openggcm(
-    vars: dict[str, xarray.Variable], attrs: dict[str, Any]
-) -> tuple[dict[str, xarray.Variable], dict[str, Any]]:
+    vars: Mapping[str, xarray.Variable], attrs: Mapping[str, Any]
+) -> tuple[Mapping[str, xarray.Variable], Mapping[str, Any]]:
     new_vars = {name: _encode_openggcm_variable(var) for name, var in vars.items()}
 
     return new_vars, attrs
