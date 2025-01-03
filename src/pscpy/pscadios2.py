@@ -7,8 +7,9 @@ import pathlib
 from typing import Any, Iterable, Mapping, Protocol
 
 import numpy as np
+import pandas as pd  # type: ignore[import-untyped]
 import xarray
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 from typing_extensions import Never, override
 from xarray.backends import CachingFileManager, DummyFileManager, FileManager
 from xarray.backends.common import (
@@ -293,10 +294,10 @@ def _decode_openggcm(
         # decode to_gitm specific (FIXME?) specific way of storing time as array of 7 ints
         if ds.time.dtype == np.int32 and ds.time.shape[-1] == 7:
             if ds.time.ndim == 1:
-                ds["time"] = xarray.Variable((), dt.datetime(*ds.time.values))
+                ds["time"] = xarray.Variable((), dt.datetime(*ds.time.to_numpy()))
             elif ds.time.ndim == 2:
                 ds["time"] = xarray.Variable(
-                    ds.time.dims[0], [dt.datetime(*vals) for vals in ds.time.values]
+                    ds.time.dims[0], [dt.datetime(*vals) for vals in ds.time.to_numpy()]
                 )
 
     # add colats and mlts as coordinates
@@ -308,3 +309,40 @@ def _decode_openggcm(
         ds = ds.assign_coords(colats=90 - ds.lats, mlts=(ds.longs + 180) * 24 / 360)
 
     return ds
+
+
+def _dt64_to_time_array(times: ArrayLike, dtype: DTypeLike) -> ArrayLike:
+    times = pd.to_datetime(times)
+    return np.array(
+        [
+            times.year,
+            times.month,
+            times.day,
+            times.hour,
+            times.minute,
+            times.second,
+            times.microsecond // 1000,
+        ],
+        dtype=dtype,
+    ).T
+
+
+def _encode_openggcm_variable(var: xarray.Variable) -> xarray.Variable:
+    if var.encoding.get("time_array", False):
+        new_var = xarray.Variable(
+            dims=("time_array", *var.dims),
+            data=_dt64_to_time_array(
+                var.to_numpy(), var.encoding.get("dtype", "int32")
+            ),
+        )
+    else:
+        new_var = var
+    return new_var
+
+
+def _encode_openggcm(
+    vars: dict[str, xarray.Variable], attrs: dict[str, Any]
+) -> tuple[dict[str, xarray.Variable], dict[str, Any]]:
+    new_vars = {name: _encode_openggcm_variable(var) for name, var in vars.items()}
+
+    return new_vars, attrs

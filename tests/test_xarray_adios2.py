@@ -9,7 +9,7 @@ import pytest
 import xarray as xr
 
 import pscpy
-from pscpy import adios2py
+from pscpy import adios2py, pscadios2
 from pscpy.pscadios2 import Adios2Store
 
 
@@ -183,6 +183,38 @@ def test_open_dataset_4(test_filename_4):
     print(ds)
     assert ds.time[0] == np.datetime64("1970-01-01T00:00:00.000")
     assert ds.time[1] == np.datetime64("1970-01-01T00:00:01.000")
+
+
+def test_encode_time_array():
+    time = xr.Variable(
+        dims=(),
+        data=np.array(np.datetime64("1970-01-02T03:04:05", "ns")),
+        encoding=dict(dtype="int32", time_array=True),  # noqa: C408
+    )
+    time1d = xr.Variable(
+        dims=("time",),
+        data=np.array(
+            [
+                np.datetime64("1970-01-02T03:04:05", "ns"),
+                np.datetime64("1970-01-02T03:04:05.600", "ns"),
+            ]
+        ),
+        encoding=dict(dtype="int32", time_array=True),  # noqa: C408
+    )
+    vars = {"time": time, "time1d": time1d}
+    attrs = {}
+
+    vars, attrs = pscadios2._encode_openggcm(vars, attrs)
+
+    assert np.all(
+        vars["time"].values == np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32)
+    )
+    assert np.all(
+        vars["time1d"].values
+        == np.array(
+            [[1970, 1, 2, 3, 4, 5, 0], [1970, 1, 2, 3, 4, 5, 600]], dtype=np.int32
+        )
+    )
 
 
 # def test_ggcm_i2c():
