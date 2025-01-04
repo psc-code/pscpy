@@ -14,9 +14,9 @@ from typing_extensions import Never, override
 from xarray.backends import CachingFileManager, DummyFileManager, FileManager
 from xarray.backends.common import (
     AbstractDataStore,
-    AbstractWritableDataStore,
     BackendArray,
     BackendEntrypoint,
+    WritableCFDataStore,
     _normalize_path,
 )
 from xarray.backends.locks import (
@@ -80,7 +80,7 @@ class Adios2Array(BackendArray):
             return self.get_array(needs_lock=False)[key]
 
 
-class Adios2Store(AbstractWritableDataStore):
+class Adios2Store(WritableCFDataStore):
     """DataStore to facilitate loading an Adios2 file."""
 
     def __init__(
@@ -194,6 +194,8 @@ class Adios2Store(AbstractWritableDataStore):
         writer: Any = None,
         unlimited_dims: bool | None = None,  # noqa: ARG002
     ) -> None:
+        variables, attributes = self.encode(variables, attributes)  # type:ignore[no-untyped-call]
+
         writer._begin_step()
         for var_name, var in variables.items():
             writer._write(var_name, var)
