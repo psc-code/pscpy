@@ -14,6 +14,7 @@ from typing_extensions import Never, override
 from xarray.backends import CachingFileManager, DummyFileManager, FileManager
 from xarray.backends.common import (
     AbstractDataStore,
+    AbstractWritableDataStore,
     BackendArray,
     BackendEntrypoint,
     _normalize_path,
@@ -79,7 +80,7 @@ class Adios2Array(BackendArray):
             return self.get_array(needs_lock=False)[key]
 
 
-class Adios2Store(AbstractDataStore):
+class Adios2Store(AbstractWritableDataStore):
     """DataStore to facilitate loading an Adios2 file."""
 
     def __init__(
@@ -97,7 +98,7 @@ class Adios2Store(AbstractDataStore):
     @classmethod
     def open(
         cls,
-        filename_or_obj: str | os.PathLike[Any] | adios2py.Group,
+        filename_or_obj: str | os.PathLike[Any] | adios2py.Group | None,
         mode: str = "r",
         lock: Lock | None = None,
         parameters: dict[str, str] | None = None,
@@ -119,6 +120,9 @@ class Adios2Store(AbstractDataStore):
                 adios2py.File, filename_or_obj, mode=mode, kwargs=kwargs
             )
         elif isinstance(filename_or_obj, adios2py.Group):
+            manager = DummyFileManager(filename_or_obj)  # type: ignore[no-untyped-call]
+        elif filename_or_obj is None:
+            assert mode == "w"
             manager = DummyFileManager(filename_or_obj)  # type: ignore[no-untyped-call]
         else:
             msg = f"Adios2Store: unknown filename_or_obj {filename_or_obj}"  # type: ignore[unreachable]
@@ -159,6 +163,7 @@ class Adios2Store(AbstractDataStore):
             return xarray.Variable(dims, data, attrs)
 
         # if we have no info, not much we can do...
+        # print(f"Variable without dimensions: {var_name}")
         dims = tuple(f"len_{dim}" for dim in data.shape)
         return xarray.Variable(dims, data, attrs)
 
@@ -180,6 +185,22 @@ class Adios2Store(AbstractDataStore):
         # TODO, this isn't really the right place to do this -- more of a hack
         # to get the decoding hooked in while we still have vars, attrs
         return _decode_openggcm_vars_attrs(vars, attrs)
+
+    def store(
+        self,
+        variables: Mapping[str, xarray.Variable],
+        attributes: Mapping[str, Any],
+        check_encoding_set: Any = frozenset(),  # noqa: ARG002
+        writer: Any = None,
+        unlimited_dims: bool | None = None,  # noqa: ARG002
+    ) -> None:
+        writer._begin_step()
+        for var_name, var in variables.items():
+            writer._write(var_name, var)
+
+        for attr_name, attr in attributes.items():
+            writer._write_attribute(attr_name, attr)
+        writer._end_step()
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
