@@ -106,7 +106,7 @@ class Variable:
                     f"cannot access step {self._step} in streaming mode, "
                     f"current_step = {self._state.current_step()}"
                 )
-                raise KeyError(msg)
+                raise IndexError(msg)
 
             return self._getitem((0, *args))
 
@@ -154,7 +154,10 @@ class Variable:
 
         if len(sel) > 1:
             self.var.set_selection(
-                (self._maybe_reverse(sel_start[1:]), self._maybe_reverse(sel_count[1:]))
+                (
+                    self._maybe_reverse(sel_start[1:]),
+                    self._maybe_reverse(sel_count[1:]),
+                )
             )
 
         order = "F" if self._reverse_dims else "C"
@@ -363,8 +366,19 @@ class File(Group):
         self._state.close()
 
     @property
+    def parameters(self) -> Mapping[str, str]:
+        return self._state.io.parameters()  # type: ignore[no-any-return]
+
+    @property
+    def engine_type(self) -> str:
+        return self._state.io.engine_type()  # type: ignore[no-any-return]
+
+    @property
     def steps(self) -> StepsProxy:
         return StepsProxy(self._state)
+
+    def in_step(self) -> bool:
+        return self._state.current_step() is not None
 
 
 class AttrsProxy(Mapping[str, Any]):
@@ -399,7 +413,7 @@ class StepsProxy(Iterable[Step]):
         if self._state.mode == "r":
             try:
                 while True:
-                    with next(self) as step:
+                    with self.next() as step:
                         yield step
             except EOFError:
                 pass
@@ -409,8 +423,8 @@ class StepsProxy(Iterable[Step]):
 
     def __getitem__(self, step: int) -> Step:
         if self._state.mode != "rra" and step != self._state.current_step():
-            msg = f"Failed to get steps({step} in streaming mode."
-            raise TypeError(msg)
+            msg = f"Failed to get steps({step}) in streaming mode."
+            raise IndexError(msg)
 
         return Step(self._state, step)
 
@@ -418,7 +432,7 @@ class StepsProxy(Iterable[Step]):
         return self._state.engine.steps()  # type: ignore[no-any-return]
 
     @contextmanager
-    def __next__(self) -> Generator[Step]:
+    def next(self) -> Generator[Step]:
         status = None
         try:
             status = self._state.begin_step()

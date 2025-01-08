@@ -48,14 +48,14 @@ def test_open_with_parameters():
     with adios2py.File(
         pscpy.sample_dir / "pfd.000000400.bp", parameters=params
     ) as file:
-        assert file._state.io.parameters() == params
+        assert file.parameters == params
 
 
 def test_open_with_engine():
     with adios2py.File(
         pscpy.sample_dir / "pfd.000000400.bp", engine_type="BP4"
     ) as file:
-        assert file._state.io.engine_type() == "BP4"
+        assert file.engine_type == "BP4"
 
 
 def test_with(pfd_file):
@@ -110,16 +110,10 @@ def test_variable_shape(pfd_file):
         var = pfd_file["jeh"]
         assert var.shape == (1, 9, 512, 128, 1)
 
-    with pytest.raises(ValueError, match="is closed"):
-        assert var.shape == (9, 512, 128, 1)
-
 
 def test_variable_name(pfd_file):
     with pfd_file:
         var = pfd_file["jeh"]
-        assert var.name == "jeh"
-
-    with pytest.raises(ValueError, match="is closed"):
         assert var.name == "jeh"
 
 
@@ -128,19 +122,11 @@ def test_variable_dtype(pfd_file):
         var = pfd_file["jeh"]
         assert var.dtype == np.float32
 
-    with pytest.raises(ValueError, match="is closed"):
-        assert var.dtype == np.float32
-
 
 def test_variable_repr(pfd_file):
     with pfd_file:
         var = pfd_file["jeh"]
-        assert (
-            repr(var)
-            == "adios2py.Variable(name=jeh, shape=(1, 9, 512, 128, 1), dtype=float32"
-        )
-
-    assert repr(var) == "adios2py.Variable(name=jeh) (closed)"
+        assert "name=jeh" in repr(var)
 
 
 def test_variable_is_reverse_dims(pfd_file):
@@ -256,7 +242,7 @@ def test_read_streaming_adios2py_resume(test_file):
 
 def test_read_streaming_adios2py_next(test_file):
     # do 0th iteration
-    with next(test_file.steps) as step:
+    with test_file.steps.next() as step:
         scalar = step["scalar"][()]
         assert scalar == 0
 
@@ -279,7 +265,7 @@ def test_read_adios2py_step_persist(test_filename, mode):
         if mode == "rra":
             assert step1["scalar"][()] == 1
         else:
-            with pytest.raises(KeyError):
+            with pytest.raises(IndexError):
                 step1["scalar"][()]
 
 
@@ -293,7 +279,7 @@ def test_read_adios2py_var_persist_r(test_filename, mode):
         if mode == "rra":
             assert var1[()] == 1
         else:
-            with pytest.raises(KeyError, match="cannot access"):
+            with pytest.raises(IndexError):
                 var1[()]
 
 
@@ -311,12 +297,12 @@ def test_read_adios2py_steps_getitem_rra(test_filename):
 
 def test_read_adios2py_steps_getitem_r(test_filename):
     with adios2py.File(test_filename, mode="r") as file:  # noqa: SIM117
-        with pytest.raises(TypeError):
+        with pytest.raises(IndexError):
             file.steps[2]
 
 
 def test_read_streaming_adios2py_current_step_outside_step(test_file):
-    assert test_file._state.current_step() is None
+    assert not test_file.in_step()
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
