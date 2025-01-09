@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import datetime as dt
 import logging
 import os
@@ -147,14 +146,7 @@ class Adios2Store(WritableCFDataStore):
 
     def open_store_variable(self, var_name: str) -> xarray.Variable:
         data = indexing.LazilyIndexedArray(Adios2Array(var_name, self))
-        attr_names = [name for name in self.ds.attrs if name.startswith(f"{var_name}/")]
-        self._var_attrs |= set(attr_names)
-        attrs = {
-            name.removeprefix(f"{var_name}/"): self.ds.attrs[name]  # type: ignore[attr-defined]
-            for name in attr_names
-        }
-        with contextlib.suppress(AttributeError):
-            attrs |= self.ds[var_name].attrs  # type: ignore[operator]
+        attrs = dict(self.ds[var_name].attrs)
         if "dimensions" in attrs:
             dims: tuple[str, ...] = attrs["dimensions"].split()
             del attrs["dimensions"]
