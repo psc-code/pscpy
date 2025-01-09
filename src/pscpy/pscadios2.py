@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import logging
 import os
@@ -151,6 +152,8 @@ class Adios2Store(WritableCFDataStore):
             name.removeprefix(f"{var_name}/"): self.ds.attrs[name]  # type: ignore[attr-defined]
             for name in attr_names
         }
+        with contextlib.suppress(AttributeError):
+            attrs |= self.ds[var_name].attrs  # type:ignore[attr-defined]
         if "dimensions" in attrs:
             dims: tuple[str, ...] = attrs["dimensions"].split()
             del attrs["dimensions"]
