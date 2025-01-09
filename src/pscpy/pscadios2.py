@@ -7,6 +7,7 @@ import os
 import pathlib
 from typing import Any, Iterable, Mapping, Protocol, Sequence
 
+import adios2py
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import xarray
@@ -32,7 +33,7 @@ from xarray.core.datatree import DataTree
 from xarray.core.types import ReadBuffer
 from xarray.core.utils import FrozenDict
 
-from . import adios2py, psc
+from . import psc
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class Adios2Array(BackendArray):
         self.shape = array.shape
         self.dtype = array.dtype
 
-    def get_array(self, needs_lock: bool = True) -> adios2py.Variable:
+    def get_array(self, needs_lock: bool = True) -> ArrayLike:
         return self.datastore.acquire(needs_lock)[self.variable_name]
 
     def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
@@ -153,7 +154,7 @@ class Adios2Store(WritableCFDataStore):
             for name in attr_names
         }
         with contextlib.suppress(AttributeError):
-            attrs |= self.ds[var_name].attrs  # type:ignore[attr-defined]
+            attrs |= self.ds[var_name].attrs  # type: ignore[operator]
         if "dimensions" in attrs:
             dims: tuple[str, ...] = attrs["dimensions"].split()
             del attrs["dimensions"]

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
+import adios2py
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-
-from . import adios2py
 
 
 class RunInfo:

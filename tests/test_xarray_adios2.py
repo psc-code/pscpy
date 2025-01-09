@@ -4,12 +4,13 @@ import os
 from typing import Any
 
 import adios2
+import adios2py
 import numpy as np
 import pytest
 import xarray as xr
 
 import pscpy
-from pscpy import adios2py, pscadios2
+from pscpy import pscadios2
 from pscpy.pscadios2 import Adios2Store
 
 

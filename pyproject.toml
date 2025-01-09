@@ -23,7 +23,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dynamic = ["version"]
-dependencies = ["xarray", "adios2", "typing-extensions"]
+dependencies = ["xarray", "adios2py", "typing-extensions"]
 
 [project.optional-dependencies]
 test = ["pytest >=6", "pytest-cov >=3"]
@@ -147,3 +147,6 @@ messages_control.disable = [
   "missing-function-docstring",
   "wrong-import-position",
 ]
+
+[tool.uv]
+reinstall-package = ["pscpy"]

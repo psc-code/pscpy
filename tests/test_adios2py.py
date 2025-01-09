@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import adios2
+import adios2py
 import numpy as np
 import pytest
 
 import pscpy
-from pscpy import adios2py
 
 
 @pytest.fixture
