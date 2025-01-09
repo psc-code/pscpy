@@ -231,8 +231,6 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
     ) -> xarray.Dataset:
         if isinstance(filename_or_obj, Adios2Store):
             store = filename_or_obj
-        elif isinstance(filename_or_obj, adios2py.Group):
-            store = Adios2Store.open(filename_or_obj)
         else:
             filename = _normalize_path(filename_or_obj)
             if not isinstance(filename, str):
