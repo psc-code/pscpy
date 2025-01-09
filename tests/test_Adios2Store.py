@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import adios2
+import adios2py
 import numpy as np
 import pytest
 
@@ -12,11 +12,10 @@ from pscpy.pscadios2 import Adios2Store
 @pytest.fixture
 def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
-    with adios2.Stream(str(filename), mode="w") as file:
-        for step, _ in enumerate(file.steps(5)):
-            file.write("scalar", step)
-            arr1d = np.arange(10)
-            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+    with adios2py.File(filename, mode="w") as file:
+        for n, step in zip(range(5), file.steps):
+            step["scalar"] = n
+            step["arr1d"] = np.arange(10)
 
     return filename
 

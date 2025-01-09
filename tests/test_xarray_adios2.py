@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-import adios2
 import adios2py
 import numpy as np
 import pytest
@@ -17,11 +16,10 @@ from pscpy.pscadios2 import Adios2Store
 @pytest.fixture
 def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
-    with adios2.Stream(str(filename), mode="w") as file:
-        for step, _ in enumerate(file.steps(5)):
-            file.write("scalar", step)
-            arr1d = np.arange(10)
-            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
+    with adios2py.File(filename, mode="w") as file:
+        for n, step in zip(range(5), file.steps):
+            step["scalar"] = n
+            step["arr1d"] = np.arange(10)
 
     return filename
 
@@ -29,17 +27,16 @@ def test_filename(tmp_path):
 @pytest.fixture
 def test_filename_2(tmp_path):
     filename = tmp_path / "test_file_2.bp"
-    with adios2.Stream(str(filename), mode="w") as file:
-        for step, _ in enumerate(file.steps(5)):
-            file.write("step", step)
-            file.write("time", 10.0 * step)
+    with adios2py.File(filename, mode="w") as file:
+        for n, step in zip(range(5), file.steps):
+            step["step"] = n
+            step["time"] = 10.0 * n
 
-            x = np.linspace(0, 1, 10)
-            file.write("x", x, x.shape, [0], x.shape)
-            file.write_attribute("dimensions", "redundant x", variable_name="x")
-            arr1d = np.arange(10)
-            file.write("arr1d", arr1d, arr1d.shape, [0], arr1d.shape)
-            file.write_attribute("dimensions", "time x", variable_name="arr1d")
+            step["x"] = np.linspace(0, 1, 10)
+            step["x"].attrs["dimensions"] = "redundant x"
+
+            step["arr1d"] = np.arange(10)
+            step["arr1d"].attrs["dimensions"] = "time x"
 
     return filename
 
@@ -47,14 +44,14 @@ def test_filename_2(tmp_path):
 @pytest.fixture
 def test_filename_3(tmp_path):
     filename = tmp_path / "test_file_3.bp"
-    with adios2.Stream(str(filename), mode="w") as file:
-        for step, _ in enumerate(file.steps(5)):
-            file.write("step", step)
-            file.write_attribute("dimensions", "step", "step")
-            time = np.array([2013, 3, 17, 13, 0, step, 200], dtype=np.int32)
-            file.write("time", time, time.shape, [0], time.shape)
-            file.write_attribute("dimensions", "step time_array", "time")
-            file.write_attribute("units", "time_array", "time")
+    with adios2py.File(filename, mode="w") as file:
+        for n, step in zip(range(5), file.steps):
+            step["step"] = n
+            step["step"].attrs["dimensions"] = "step"
+
+            step["time"] = np.array([2013, 3, 17, 13, 0, n, 200], dtype=np.int32)
+            step["time"].attrs["dimensions"] = "step time_array"
+            step["time"].attrs["units"] = "time_array"
 
     return filename
 
@@ -62,11 +59,10 @@ def test_filename_3(tmp_path):
 @pytest.fixture
 def test_filename_4(tmp_path):
     filename = tmp_path / "test_file_4.bp"
-    with adios2.Stream(str(filename), mode="w") as file:
-        for step, _ in enumerate(file.steps(5)):
-            time = np.array(step)
-            file.write("time", time)
-            file.write_attribute("units", "seconds since 1970-01-01", "time")
+    with adios2py.File(filename, mode="w") as file:
+        for n, step in zip(range(5), file.steps):
+            step["time"] = n
+            step["time"].attrs["units"] = "seconds since 1970-01-01"
 
     return filename
 
