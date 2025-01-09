@@ -366,6 +366,10 @@ class File(Group):
         self._state.close()
 
     @property
+    def filename(self) -> os.PathLike[Any] | str:
+        return self._state._filename
+
+    @property
     def parameters(self) -> Mapping[str, str]:
         return self._state.io.parameters()  # type: ignore[no-any-return]
 
