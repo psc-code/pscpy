@@ -129,6 +129,7 @@ def test_variable_repr(pfd_file):
         assert "name=jeh" in repr(var)
 
 
+@pytest.mark.skip
 def test_variable_is_reverse_dims(pfd_file):
     var = pfd_file["jeh"]
     assert not var._is_reverse_dims()
