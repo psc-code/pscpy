@@ -71,8 +71,8 @@ def test_dump_to_store(tmp_path):
 
     filename = tmp_path / "test_store1.bp"
     with adios2py.File(filename, "w") as file:
-        store = Adios2Store.open(filename_or_obj=None, mode="w")
-        ds.dump_to_store(store, writer=file)
+        store = Adios2Store.open(file, mode="w")
+        ds.dump_to_store(store)
 
     with adios2py.File(filename, "rra") as file:
         ds_read = xr.open_dataset(Adios2Store.open(file.steps[0]))

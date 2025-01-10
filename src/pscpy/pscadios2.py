@@ -106,7 +106,7 @@ class Adios2Store(WritableCFDataStore):
         engine_type: str | None = None,
     ) -> Adios2Store:
         if lock is None:
-            if mode == "r":
+            if mode == "r" or isinstance(filename_or_obj, adios2py.Group):
                 lock = ADIOS2_LOCK
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename_or_obj)])  # type: ignore[no-untyped-call]
@@ -182,18 +182,19 @@ class Adios2Store(WritableCFDataStore):
         # to get the decoding hooked in while we still have vars, attrs
         return _decode_openggcm_vars_attrs(vars, attrs)
 
+    @override
     def store(
         self,
         variables: Mapping[str, xarray.Variable],
         attributes: Mapping[str, Any],
-        check_encoding_set: Any = frozenset(),  # noqa: ARG002
+        check_encoding_set: Any = frozenset(),
         writer: Any = None,
-        unlimited_dims: bool | None = None,  # noqa: ARG002
+        unlimited_dims: bool | None = None,
     ) -> None:
         variables, attributes = self.encode(variables, attributes)  # type:ignore[no-untyped-call]
 
-        file = writer
-        with file.steps.next() as step:
+        assert isinstance(self.ds, adios2py.File)
+        with self.ds.steps.next() as step:
             for name, var in variables.items():
                 step[name] = var
                 step[name].attrs["dtype"] = str(var.dtype)
@@ -202,7 +203,7 @@ class Adios2Store(WritableCFDataStore):
                     step[name].attrs[attr_name] = attr
 
             for attr_name, attr in attributes.items():
-                file.attrs[attr_name] = attr
+                step.attrs[attr_name] = attr
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
