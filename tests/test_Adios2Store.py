@@ -3,6 +3,7 @@ from __future__ import annotations
 import adios2py
 import numpy as np
 import pytest
+import xarray as xr
 
 import pscpy
 from pscpy.pscadios2 import Adios2Store
@@ -60,3 +61,20 @@ def test_rra(test_filename):
     with Adios2Store.open(test_filename, mode="rra") as store:
         vars, _ = store.load()
         assert np.all(vars["scalar"] == np.arange(5))
+
+
+def test_dump_to_store(tmp_path):
+    ds = xr.Dataset(
+        data_vars={"var": xr.DataArray(np.arange(10) * 10.0, dims=("x",))},
+        coords={"x": np.arange(10)},
+    )
+
+    filename = tmp_path / "test_store1.bp"
+    with adios2py.File(filename, "w") as file:
+        store = Adios2Store.open(filename_or_obj=None, mode="w")
+        ds.dump_to_store(store, writer=file)
+
+    with adios2py.File(filename, "rra") as file:
+        ds_read = xr.open_dataset(Adios2Store.open(file.steps[0]))
+        assert ds == ds_read
+        assert ds.coords.keys() == ds_read.coords.keys()
