@@ -193,16 +193,16 @@ class Adios2Store(WritableCFDataStore):
         variables, attributes = self.encode(variables, attributes)  # type:ignore[no-untyped-call]
 
         file = writer
-        with file.steps.next():
+        with file.steps.next() as step:
             for name, var in variables.items():
-                file._write(name, var)
-                file._write_attribute("dtype", str(var.dtype), name)
-                file._write_attribute("dimensions", " ".join(("time", *var.dims)), name)  # type: ignore[arg-type]
+                step[name] = var
+                step[name].attrs["dtype"] = str(var.dtype)
+                step[name].attrs["dimensions"] = " ".join(("time", *var.dims))  # type: ignore[arg-type]
                 for attr_name, attr in var.attrs.items():
-                    file._write_attribute(attr_name, attr, name)
+                    step[name].attrs[attr_name] = attr
 
             for attr_name, attr in attributes.items():
-                file._write_attribute(attr_name, attr)
+                file.attrs[attr_name] = attr
 
 
 class PscAdios2BackendEntrypoint(BackendEntrypoint):
