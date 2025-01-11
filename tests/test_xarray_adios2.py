@@ -10,18 +10,22 @@ import xarray as xr
 
 import pscpy
 from pscpy import pscadios2
-from pscpy.pscadios2 import Adios2Store
+
+try:
+    from xarray_adios2 import Adios2Store
+except ImportError:
+    from pscpy.pscadios2 import Adios2Store
 
 
 @pytest.fixture
 def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
     with adios2py.File(filename, mode="w") as file:
+        file.attrs["step_dimension"] = "step"
         for n, step in zip(range(5), file.steps):
             step["scalar"] = n
-            step["scalar"].attrs["dimensions"] = "steps"
             step["arr1d"] = np.arange(10)
-            step["arr1d"].attrs["dimensions"] = "steps x"
+            step["arr1d"].attrs["dimensions"] = "x"
 
     return filename
 
@@ -51,10 +55,10 @@ def test_filename_3(tmp_path):
         file.attrs["step_dimension"] = "time"
         for n, step in zip(range(5), file.steps):
             step["step"] = n
-            step["step"].attrs["dimensions"] = "step"
+            # step["step"].attrs["dimensions"] = "step"
 
             step["time"] = np.array([2013, 3, 17, 13, 0, n, 200], dtype=np.int32)
-            step["time"].attrs["dimensions"] = "step time_array"
+            step["time"].attrs["dimensions"] = "time_array"
             step["time"].attrs["units"] = "time_array"
 
     return filename
@@ -133,8 +137,8 @@ def test_open_dataset_steps(test_filename):
 def test_open_dataset_steps_from_Step(test_filename, mode):
     with adios2py.File(test_filename, mode) as file:
         for n, step in enumerate(file.steps):
-            store = Adios2Store.open(step)
-            ds = xr.open_dataset(store, engine="pscadios2_engine")
+            store = Adios2Store(step)
+            ds = xr.open_dataset(store)
             assert ds.keys() == set({"scalar", "arr1d"})
             assert ds["scalar"] == n
 
@@ -152,13 +156,14 @@ def test_open_dataset_2(test_filename_2):
 def test_open_dataset_2_step(test_filename_2, mode):
     with adios2py.File(test_filename_2, mode=mode) as file:
         for _, step in enumerate(file.steps):
-            ds = xr.open_dataset(Adios2Store.open(step))
+            ds = xr.open_dataset(Adios2Store(step))
             assert ds.keys() == set({"step", "time", "arr1d"})
             assert ds.coords.keys() == set({"x"})
 
 
 def test_open_dataset_3(test_filename_3):
-    ds = xr.open_dataset(test_filename_3, decode_openggcm=True)
+    ds = xr.open_dataset(test_filename_3)  # , decode_openggcm=True)
+    ds["time"] = pscadios2._decode_openggcm_variable(ds.time, "time")
     assert ds.time.shape == (5,)
     assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.200")
     assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.200")
@@ -167,8 +172,11 @@ def test_open_dataset_3(test_filename_3):
 @pytest.mark.parametrize("mode", ["r", "rra"])
 def test_open_dataset_3_step(test_filename_3, mode):
     with adios2py.File(test_filename_3, mode=mode) as file:
+        print("ini")
         for n, step in enumerate(file.steps):
-            ds = xr.open_dataset(Adios2Store.open(step), decode_openggcm=True)
+            print("n", n)
+            ds = xr.open_dataset(Adios2Store(step))  # , decode_openggcm=True)
+            ds["time"] = pscadios2._decode_openggcm_variable(ds.time, "time")
             assert ds.time == np.datetime64("2013-03-17T13:00:00.200") + np.timedelta64(
                 n, "s"
             )

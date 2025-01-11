@@ -237,14 +237,12 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
         decode_openggcm=False,
     ) -> xarray.Dataset:
-        if isinstance(filename_or_obj, Adios2Store):
-            store = filename_or_obj
-        else:
+        if isinstance(filename_or_obj, (str, os.PathLike)):
             filename = _normalize_path(filename_or_obj)
-            if not isinstance(filename, str):
-                raise NotImplementedError()
-
-            store = Adios2Store.open(filename, mode="rra")
+            store: AbstractDataStore = Adios2Store.open(filename, mode="rra")
+        else:
+            assert isinstance(filename_or_obj, AbstractDataStore)
+            store = filename_or_obj
 
         store_entrypoint = StoreBackendEntrypoint()
 
@@ -263,6 +261,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
             ds = ds.isel(redundant=0)
 
         if species_names is not None:
+            assert isinstance(store, Adios2Store)
             ds = _decode_psc(ds, store.ds, species_names, length, corner)
 
         if decode_openggcm:
