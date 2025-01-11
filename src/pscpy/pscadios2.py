@@ -263,7 +263,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
         if species_names is not None:
             assert isinstance(store, Adios2Store)
-            ds = _decode_psc(ds, store.ds, species_names, length, corner)
+            ds = _decode_psc(ds, species_names, length, corner)
 
         if decode_openggcm:
             ds = _decode_openggcm(ds)
@@ -292,7 +292,6 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
 
 def _decode_psc(
     ds: xarray.Dataset,
-    file: adios2py.Group,
     species_names: Iterable[str],
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
@@ -308,7 +307,7 @@ def _decode_psc(
     ds = ds.assign(data_vars)
 
     if length is not None:
-        run_info = psc.RunInfo(file, length=length, corner=corner)
+        run_info = psc.RunInfo(ds, length=length, corner=corner)
         coords = {
             "x": ("x", run_info.x),
             "y": ("y", run_info.y),

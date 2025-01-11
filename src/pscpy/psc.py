@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-import adios2py
 import numpy as np
+import xarray as xr
 from numpy.typing import ArrayLike, NDArray
 
 
@@ -17,15 +17,15 @@ class RunInfo:
 
     def __init__(
         self,
-        file: adios2py.Group,
+        ds: xr.Dataset,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
     ) -> None:
-        first_var = next(iter(file.values()))
+        first_var = ds[next(iter(ds))]
         self.gdims = np.asarray(first_var.shape)[::-1][:3]
 
-        self.length = file.attrs.get("length", length)
-        self.corner = file.attrs.get("corner", corner)
+        self.length = ds.attrs.get("length", length)
+        self.corner = ds.attrs.get("corner", corner)
 
         self.x = self._get_coord(0)
         self.y = self._get_coord(1)
