@@ -90,6 +90,11 @@ class Adios2Store(WritableCFDataStore):
         mode: str | None = None,
         lock: Lock = ADIOS2_LOCK,
     ) -> None:
+        if isinstance(manager, adios2py.Group):
+            mode = manager._file._mode
+            manager = DummyFileManager(manager)  # type: ignore[no-untyped-call]
+
+        assert isinstance(manager, FileManager)
         self._manager = manager
         self._mode = mode
         self.lock: Lock = ensure_lock(lock)  # type: ignore[no-untyped-call]

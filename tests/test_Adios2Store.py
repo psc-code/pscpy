@@ -6,7 +6,11 @@ import pytest
 import xarray as xr
 
 import pscpy
-from pscpy.pscadios2 import Adios2Store
+
+try:
+    from xarray_adios2 import Adios2Store
+except ImportError:
+    from pscpy.pscadios2 import Adios2Store
 
 
 # FIXME, duplicated
@@ -16,7 +20,9 @@ def test_filename(tmp_path):
     with adios2py.File(filename, mode="w") as file:
         for n, step in zip(range(5), file.steps):
             step["scalar"] = n
+            step["scalar"].attrs["dimensions"] = "steps"
             step["arr1d"] = np.arange(10)
+            step["arr1d"].attrs["dimensions"] = "steps x"
 
     return filename
 
@@ -71,10 +77,10 @@ def test_dump_to_store(tmp_path):
 
     filename = tmp_path / "test_store1.bp"
     with adios2py.File(filename, "w") as file:
-        store = Adios2Store.open(file, mode="w")
+        store = Adios2Store(file, mode="w")
         ds.dump_to_store(store)
 
     with adios2py.File(filename, "rra") as file:
-        ds_read = xr.open_dataset(Adios2Store.open(file.steps[0]))
+        ds_read = xr.open_dataset(Adios2Store(file.steps[0]))
         assert ds == ds_read
         assert ds.coords.keys() == ds_read.coords.keys()
