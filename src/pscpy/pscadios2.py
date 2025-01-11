@@ -157,6 +157,8 @@ class Adios2Store(WritableCFDataStore):
             del attrs["dimensions"]
             if len(dims) == data.ndim + 1:
                 dims = dims[1:]
+            if data.ndim == len(dims) + 1:
+                dims = ("time", *dims)
             return xarray.Variable(dims, data, attrs)
 
         if data.ndim == 5:  # for psc compatibility

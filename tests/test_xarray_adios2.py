@@ -19,7 +19,9 @@ def test_filename(tmp_path):
     with adios2py.File(filename, mode="w") as file:
         for n, step in zip(range(5), file.steps):
             step["scalar"] = n
+            step["scalar"].attrs["dimensions"] = "steps"
             step["arr1d"] = np.arange(10)
+            step["arr1d"].attrs["dimensions"] = "steps x"
 
     return filename
 
@@ -28,15 +30,16 @@ def test_filename(tmp_path):
 def test_filename_2(tmp_path):
     filename = tmp_path / "test_file_2.bp"
     with adios2py.File(filename, mode="w") as file:
+        file.attrs["step_dimension"] = "time"
         for n, step in zip(range(5), file.steps):
             step["step"] = n
             step["time"] = 10.0 * n
 
             step["x"] = np.linspace(0, 1, 10)
-            step["x"].attrs["dimensions"] = "redundant x"
+            step["x"].attrs["dimensions"] = "x"
 
             step["arr1d"] = np.arange(10)
-            step["arr1d"].attrs["dimensions"] = "time x"
+            step["arr1d"].attrs["dimensions"] = "x"
 
     return filename
 
@@ -45,6 +48,7 @@ def test_filename_2(tmp_path):
 def test_filename_3(tmp_path):
     filename = tmp_path / "test_file_3.bp"
     with adios2py.File(filename, mode="w") as file:
+        file.attrs["step_dimension"] = "time"
         for n, step in zip(range(5), file.steps):
             step["step"] = n
             step["step"].attrs["dimensions"] = "step"
@@ -60,6 +64,7 @@ def test_filename_3(tmp_path):
 def test_filename_4(tmp_path):
     filename = tmp_path / "test_file_4.bp"
     with adios2py.File(filename, mode="w") as file:
+        file.attrs["step_dimension"] = "time"
         for n, step in zip(range(5), file.steps):
             step["time"] = n
             step["time"].attrs["units"] = "seconds since 1970-01-01"
@@ -170,8 +175,7 @@ def test_open_dataset_3_step(test_filename_3, mode):
 
 
 def test_open_dataset_4(test_filename_4):
-    ds = xr.open_dataset(test_filename_4, decode_openggcm=True)
-    print(ds)
+    ds = xr.open_dataset(test_filename_4)
     assert ds.time[0] == np.datetime64("1970-01-01T00:00:00.000")
     assert ds.time[1] == np.datetime64("1970-01-01T00:00:01.000")
 
