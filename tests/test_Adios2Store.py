@@ -18,7 +18,7 @@ except ImportError:
 def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
     with adios2py.File(filename, mode="w") as file:
-        for n, step in zip(range(5), file.steps):
+        for n, step in zip(range(5), file.steps, strict=False):
             step["scalar"] = n
             step["scalar"].attrs["dimensions"] = "steps"
             step["arr1d"] = np.arange(10)

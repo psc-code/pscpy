@@ -22,7 +22,7 @@ def test_filename(tmp_path):
     filename = tmp_path / "test_file.bp"
     with adios2py.File(filename, mode="w") as file:
         file.attrs["step_dimension"] = "step"
-        for n, step in zip(range(5), file.steps):
+        for n, step in zip(range(5), file.steps, strict=False):
             step["scalar"] = n
             step["arr1d"] = np.arange(10)
             step["arr1d"].attrs["dimensions"] = "x"
@@ -35,7 +35,7 @@ def test_filename_2(tmp_path):
     filename = tmp_path / "test_file_2.bp"
     with adios2py.File(filename, mode="w") as file:
         file.attrs["step_dimension"] = "time"
-        for n, step in zip(range(5), file.steps):
+        for n, step in zip(range(5), file.steps, strict=False):
             step["step"] = n
             step["time"] = 10.0 * n
 
@@ -53,7 +53,7 @@ def test_filename_3(tmp_path):
     filename = tmp_path / "test_file_3.bp"
     with adios2py.File(filename, mode="w") as file:
         file.attrs["step_dimension"] = "time"
-        for n, step in zip(range(5), file.steps):
+        for n, step in zip(range(5), file.steps, strict=False):
             step["step"] = n
             # step["step"].attrs["dimensions"] = "step"
 
@@ -69,7 +69,7 @@ def test_filename_4(tmp_path):
     filename = tmp_path / "test_file_4.bp"
     with adios2py.File(filename, mode="w") as file:
         file.attrs["step_dimension"] = "time"
-        for n, step in zip(range(5), file.steps):
+        for n, step in zip(range(5), file.steps, strict=False):
             step["time"] = n
             step["time"].attrs["units"] = "seconds since 1970-01-01"
 

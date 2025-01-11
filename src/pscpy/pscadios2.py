@@ -4,7 +4,8 @@ import datetime as dt
 import logging
 import os
 import pathlib
-from typing import Any, Iterable, Mapping, Protocol, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, Protocol
 
 import adios2py
 import numpy as np
@@ -68,15 +69,15 @@ class Adios2Array(BackendArray):
         self.shape = array.shape
         self.dtype = array.dtype
 
-    def get_array(self, needs_lock: bool = True) -> ArrayLike:
-        return self.datastore.acquire(needs_lock)[self.variable_name]
+    def get_array(self, needs_lock: bool = True) -> NDArray[Any]:
+        return self.datastore.acquire(needs_lock)[self.variable_name]  # type: ignore[return-value]
 
-    def __getitem__(self, key: indexing.ExplicitIndexer) -> Any:
-        return indexing.explicit_indexing_adapter(
+    def __getitem__(self, key: indexing.ExplicitIndexer) -> NDArray[Any]:
+        return indexing.explicit_indexing_adapter(  # type: ignore[no-any-return]
             key, self.shape, indexing.IndexingSupport.BASIC, self._getitem
         )
 
-    def _getitem(self, key) -> NDArray[np.floating[Any]]:  # type: ignore [no-untyped-def]
+    def _getitem(self, key: str) -> NDArray[Any]:
         with self.datastore.lock:
             return self.get_array(needs_lock=False)[key]
 
@@ -116,7 +117,7 @@ class Adios2Store(WritableCFDataStore):
             else:
                 lock = combine_locks([ADIOS2_LOCK, get_write_lock(filename_or_obj)])  # type: ignore[no-untyped-call]
 
-        if isinstance(filename_or_obj, (str, os.PathLike)):
+        if isinstance(filename_or_obj, str | os.PathLike):
             kwargs: dict[str, Any] = {}
             if parameters is not None:
                 kwargs["parameters"] = tuple(sorted(parameters.items()))
@@ -237,7 +238,7 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         | None = None,  # e.g. ['e', 'i']; FIXME should be readable from file
         decode_openggcm=False,
     ) -> xarray.Dataset:
-        if isinstance(filename_or_obj, (str, os.PathLike)):
+        if isinstance(filename_or_obj, str | os.PathLike):
             filename = _normalize_path(filename_or_obj)
             store: AbstractDataStore = Adios2Store.open(filename, mode="rra")
         else:
@@ -274,11 +275,11 @@ class PscAdios2BackendEntrypoint(BackendEntrypoint):
         self,
         filename_or_obj: str | os.PathLike[Any] | ReadBuffer[Any] | AbstractDataStore,
     ) -> bool:
-        if isinstance(filename_or_obj, (str, os.PathLike)):
+        if isinstance(filename_or_obj, str | os.PathLike):
             ext = pathlib.Path(filename_or_obj).suffix
             return ext in {".bp"}
 
-        return isinstance(filename_or_obj, (Adios2Store, adios2py.Group))
+        return isinstance(filename_or_obj, Adios2Store | adios2py.Group)
 
     @override
     def open_datatree(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import adios2py
 import numpy as np
@@ -30,8 +31,8 @@ class RunInfo:
         self.y = self._get_coord(1)
         self.z = self._get_coord(2)
 
-    def _get_coord(self, coord_idx: int) -> NDArray[np.floating[Any]]:
-        return np.linspace(
+    def _get_coord(self, coord_idx: int) -> NDArray[Any]:
+        return np.linspace(  # type: ignore[no-any-return]
             start=self.corner[coord_idx],
             stop=self.corner[coord_idx] + self.length[coord_idx],
             num=self.gdims[coord_idx],
