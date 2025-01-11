@@ -77,8 +77,9 @@ def test_filename_4(tmp_path):
 
 
 def _open_dataset(filename: os.PathLike[Any]) -> xr.Dataset:
-    return xr.open_dataset(
-        filename,
+    ds = xr.open_dataset(filename)
+    return pscadios2._decode_psc(
+        ds,
         species_names=["e", "i"],
         length=[1, 12.8, 51.2],
         corner=[0, -6.4, -25.6],

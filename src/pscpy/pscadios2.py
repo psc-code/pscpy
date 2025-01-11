@@ -296,6 +296,19 @@ def _decode_psc(
     length: ArrayLike | None = None,
     corner: ArrayLike | None = None,
 ) -> xarray.Dataset:
+    da = ds[next(iter(ds))]  # first dataset
+    if da.dims[0] == "dim_0_1":
+        # for compatibility, if dimensions weren't saved as attribute in the .bp file,
+        # fix them up here
+        ds = ds.rename_dims(
+            {
+                da.dims[0]: "step",
+                da.dims[1]: f"comp_{da.name}",
+                da.dims[2]: "z",
+                da.dims[3]: "y",
+                da.dims[4]: "x",
+            }
+        )
     ds = ds.squeeze("step")
     field_to_component = psc.get_field_to_component(species_names)
 
