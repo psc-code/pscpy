@@ -7,14 +7,10 @@ import adios2py
 import numpy as np
 import pytest
 import xarray as xr
+from ggcmpy.openggcm import decode_openggcm
+from xarray_adios2 import Adios2Store
 
 import pscpy
-from pscpy import pscadios2
-
-try:
-    from xarray_adios2 import Adios2Store
-except ImportError:
-    from pscpy.pscadios2 import Adios2Store
 
 
 @pytest.fixture
@@ -163,8 +159,8 @@ def test_open_dataset_2_step(test_filename_2, mode):
 
 
 def test_open_dataset_3(test_filename_3):
-    ds = xr.open_dataset(test_filename_3)  # , decode_openggcm=True)
-    ds["time"] = pscadios2._decode_openggcm_variable(ds.time, "time")
+    ds = xr.open_dataset(test_filename_3)
+    ds = decode_openggcm(ds)
     assert ds.time.shape == (5,)
     assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.200")
     assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.200")
@@ -176,8 +172,8 @@ def test_open_dataset_3_step(test_filename_3, mode):
         print("ini")
         for n, step in enumerate(file.steps):
             print("n", n)
-            ds = xr.open_dataset(Adios2Store(step))  # , decode_openggcm=True)
-            ds["time"] = pscadios2._decode_openggcm_variable(ds.time, "time")
+            ds = xr.open_dataset(Adios2Store(step))
+            ds = decode_openggcm(ds)
             assert ds.time == np.datetime64("2013-03-17T13:00:00.200") + np.timedelta64(
                 n, "s"
             )
@@ -187,75 +183,3 @@ def test_open_dataset_4(test_filename_4):
     ds = xr.open_dataset(test_filename_4)
     assert ds.time[0] == np.datetime64("1970-01-01T00:00:00.000")
     assert ds.time[1] == np.datetime64("1970-01-01T00:00:01.000")
-
-
-def test_encode_time_array_0d():
-    time = xr.Variable(
-        dims=(),
-        data=np.datetime64("1970-01-02T03:04:05", "ns"),
-        encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
-    )
-
-    time = pscadios2._encode_openggcm_variable(time)
-
-    assert time.attrs["units"] == "time_array"
-    assert time.sizes == dict(time_array=7)  # noqa: C408
-    assert time.dtype == np.int32
-    assert np.all(time == [1970, 1, 2, 3, 4, 5, 0])
-
-
-def test_encode_time_array_1d():
-    time1d = xr.Variable(
-        dims=("time",),
-        data=[
-            np.datetime64("1970-01-02T03:04:05", "ns"),
-            np.datetime64("1970-01-02T03:04:05.600", "ns"),
-        ],
-        encoding=dict(dtype="int32", units="time_array"),  # noqa: C408
-    )
-
-    time1d = pscadios2._encode_openggcm_variable(time1d)
-
-    assert time1d.attrs["units"] == "time_array"
-    assert time1d.sizes == dict(time=2, time_array=7)  # noqa: C408
-    assert np.all(time1d == [[1970, 1, 2, 3, 4, 5, 0], [1970, 1, 2, 3, 4, 5, 600]])
-
-
-def test_decode_time_array_0d():
-    time = xr.Variable(
-        dims=("time_array",),
-        data=np.array([1970, 1, 2, 3, 4, 5, 0], dtype=np.int32),
-        attrs=dict(units="time_array"),  # noqa: C408
-    )
-    time = pscadios2._decode_openggcm_variable(time, "time")
-
-    assert "units" not in time.attrs
-    assert np.all(time.to_numpy() == np.datetime64("1970-01-02T03:04:05", "ns"))
-
-
-def test_decode_time_array_1d():
-    time = xr.Variable(
-        dims=("time_array", "time"),
-        data=np.array(
-            [[1970, 1, 2, 3, 4, 5, 0], [1970, 1, 2, 3, 4, 5, 600]], dtype=np.int32
-        ),
-        attrs=dict(units="time_array"),  # noqa: C408
-    )
-    time = pscadios2._decode_openggcm_variable(time, "time")
-
-    assert "units" not in time.attrs
-    assert np.all(
-        time
-        == [
-            np.datetime64("1970-01-02T03:04:05", "ns"),
-            np.datetime64("1970-01-02T03:04:05.600", "ns"),
-        ]
-    )
-
-
-# def test_ggcm_i2c():
-#     ds = xr.open_dataset(
-#         "/workspaces/openggcm/ggcm-gitm-coupling-tools/data/iono_to_sigmas.bp"
-#     )
-#     assert ds.sizes == dict(lats=181, longs=61)
-#     assert np.isclose(ds.dacttime, 1.4897556e09)
