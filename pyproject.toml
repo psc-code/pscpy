@@ -42,9 +42,6 @@ Homepage = "https://github.com/psc-code/pscpy"
 Discussions = "https://github.com/psc-code/pscpy/discussions"
 Changelog = "https://github.com/psc-code/pscpy/releases"
 
-[project.entry-points."xarray.backends"]
-pscadios2_engine = "pscpy.pscadios2:PscAdios2BackendEntrypoint"
-
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools>=42", "setuptools-scm>=7"]
