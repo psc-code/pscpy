@@ -4,13 +4,9 @@ import adios2py
 import numpy as np
 import pytest
 import xarray as xr
+from xarray_adios2 import Adios2Store
 
 import pscpy
-
-try:
-    from xarray_adios2 import Adios2Store
-except ImportError:
-    from pscpy.pscadios2 import Adios2Store
 
 
 # FIXME, duplicated
