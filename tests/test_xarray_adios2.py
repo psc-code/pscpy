@@ -7,7 +7,6 @@ import adios2py
 import numpy as np
 import pytest
 import xarray as xr
-from ggcmpy.openggcm import decode_openggcm
 from xarray_adios2 import Adios2Store
 
 import pscpy
@@ -53,9 +52,8 @@ def test_filename_3(tmp_path):
             step["step"] = n
             # step["step"].attrs["dimensions"] = "step"
 
-            step["time"] = np.array([2013, 3, 17, 13, 0, n, 200], dtype=np.int32)
-            step["time"].attrs["dimensions"] = "time_array"
-            step["time"].attrs["units"] = "time_array"
+            step["time"] = 100.0 + 10 * n
+            step["time"].attrs["units"] = "second since 2020-01-01"
 
     return filename
 
@@ -160,22 +158,18 @@ def test_open_dataset_2_step(test_filename_2, mode):
 
 def test_open_dataset_3(test_filename_3):
     ds = xr.open_dataset(test_filename_3)
-    ds = decode_openggcm(ds)
     assert ds.time.shape == (5,)
-    assert ds.time[0] == np.datetime64("2013-03-17T13:00:00.200")
-    assert ds.time[1] == np.datetime64("2013-03-17T13:00:01.200")
+    assert ds.time[0] == np.datetime64("2020-01-01T00:01:40")
+    assert ds.time[1] == np.datetime64("2020-01-01T00:01:50")
 
 
 @pytest.mark.parametrize("mode", ["r", "rra"])
 def test_open_dataset_3_step(test_filename_3, mode):
     with adios2py.File(test_filename_3, mode=mode) as file:
-        print("ini")
         for n, step in enumerate(file.steps):
-            print("n", n)
             ds = xr.open_dataset(Adios2Store(step))
-            ds = decode_openggcm(ds)
-            assert ds.time == np.datetime64("2013-03-17T13:00:00.200") + np.timedelta64(
-                n, "s"
+            assert ds.time == np.datetime64("2020-01-01T00:01:40") + np.timedelta64(
+                10 * n, "s"
             )
 
 
