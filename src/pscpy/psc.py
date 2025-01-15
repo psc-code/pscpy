@@ -1,22 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
+import xarray as xr
 from numpy.typing import ArrayLike, NDArray
-
-from .adios2py import File
-
-
-def _get_array_attribute(
-    file: File, attribute_name: str, default: ArrayLike | None
-) -> NDArray[np.floating[Any]]:
-    if attribute_name in file.attribute_names:
-        return np.asarray(file.get_attribute(attribute_name))
-    if default is not None:
-        return np.asarray(default)
-    error_messsage = f"Missing attribute '{attribute_name}' with no default specified."
-    raise KeyError(error_messsage)
 
 
 class RunInfo:
@@ -28,23 +17,22 @@ class RunInfo:
 
     def __init__(
         self,
-        file: File,
+        ds: xr.Dataset,
         length: ArrayLike | None = None,
         corner: ArrayLike | None = None,
     ) -> None:
-        assert len(file.variable_names) > 0
-        var = next(iter(file.variable_names))
-        self.gdims = np.asarray(file.get_variable(var).shape)[0:3]
+        first_var = ds[next(iter(ds))]
+        self.gdims = np.asarray(first_var.shape)[::-1][:3]
 
-        self.length = _get_array_attribute(file, "length", length)
-        self.corner = _get_array_attribute(file, "corner", corner)
+        self.length = ds.attrs.get("length", length)
+        self.corner = ds.attrs.get("corner", corner)
 
         self.x = self._get_coord(0)
         self.y = self._get_coord(1)
         self.z = self._get_coord(2)
 
-    def _get_coord(self, coord_idx: int) -> NDArray[np.floating[Any]]:
-        return np.linspace(
+    def _get_coord(self, coord_idx: int) -> NDArray[Any]:
+        return np.linspace(  # type: ignore[no-any-return]
             start=self.corner[coord_idx],
             stop=self.corner[coord_idx] + self.length[coord_idx],
             num=self.gdims[coord_idx],
@@ -101,3 +89,44 @@ def get_field_to_component(species_names: Iterable[str]) -> dict[str, dict[str, 
             )
 
     return field_to_component
+
+
+def decode_psc(
+    ds: xr.Dataset,
+    species_names: Iterable[str],
+    length: ArrayLike | None = None,
+    corner: ArrayLike | None = None,
+) -> xr.Dataset:
+    da = ds[next(iter(ds))]  # first dataset
+    if da.dims[0] == "dim_0_1":
+        # for compatibility, if dimensions weren't saved as attribute in the .bp file,
+        # fix them up here
+        ds = ds.rename_dims(
+            {
+                da.dims[0]: "step",
+                da.dims[1]: f"comp_{da.name}",
+                da.dims[2]: "z",
+                da.dims[3]: "y",
+                da.dims[4]: "x",
+            }
+        )
+    ds = ds.squeeze("step")
+    field_to_component = get_field_to_component(species_names)
+
+    data_vars = {}
+    for var_name in ds:
+        if var_name in field_to_component:
+            for field, component in field_to_component[var_name].items():  # type: ignore[index]
+                data_vars[field] = ds[var_name].isel({f"comp_{var_name}": component})
+    ds = ds.assign(data_vars)
+
+    if length is not None:
+        run_info = RunInfo(ds, length=length, corner=corner)
+        coords = {
+            "x": ("x", run_info.x),
+            "y": ("y", run_info.y),
+            "z": ("z", run_info.z),
+        }
+        ds = ds.assign_coords(coords)
+
+    return ds
