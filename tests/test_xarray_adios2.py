@@ -105,10 +105,13 @@ def test_component():
 def test_selection():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
-    assert np.all(
-        ds_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)).data
-        == ds_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40)).data
-    )
+    assert np.all(ds_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)).data == ds_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40)).data)
+
+
+def test_nbytes():
+    ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
+    ds_decoded = _decode_dataset(ds_raw)
+    assert ds_decoded.nbytes == ds_decoded.nbytes
 
 
 def test_computed():
