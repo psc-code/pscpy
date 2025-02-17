@@ -92,22 +92,22 @@ def test_open_dataset():
     assert ds_decoded.coords.keys() == set({"x", "y", "z"})
     assert ds_decoded.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
     assert np.allclose(
-        ds_decoded.jx_ec.z, np.linspace(-25.6, 25.6, 512, endpoint=False)
+        ds_decoded.jx_ec.z.data, np.linspace(-25.6, 25.6, 512, endpoint=False).data
     )
 
 
 def test_component():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
-    assert np.all(ds_raw.jeh.isel(dim_1_9=0) == ds_decoded.jx_ec)
+    assert np.all(ds_raw.jeh.isel(dim_1_9=0).data == ds_decoded.jx_ec.data)
 
 
 def test_selection():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
     assert np.all(
-        ds_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40))
-        == ds_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40))
+        ds_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)).data
+        == ds_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40)).data
     )
 
 
@@ -115,14 +115,14 @@ def test_computed():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
     ds_raw = ds_raw.assign(jx=ds_raw.jeh.isel(dim_1_9=0))
-    assert np.all(ds_raw.jx == ds_decoded.jx_ec)
+    assert np.all(ds_raw.jx.data == ds_decoded.jx_ec.data)
 
 
 def test_computed_via_lambda():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
     ds_raw = ds_raw.assign(jx=lambda ds: ds.jeh.isel(dim_1_9=0))
-    assert np.all(ds_raw.jx == ds_decoded.jx_ec)
+    assert np.all(ds_raw.jx.data == ds_decoded.jx_ec.data)
 
 
 def test_pfd_moments():
@@ -130,7 +130,7 @@ def test_pfd_moments():
     ds_decoded = _decode_dataset(ds_raw)
     assert "all_1st" in ds_raw
     assert "rho_i" in ds_decoded
-    assert np.all(ds_decoded.rho_i == ds_raw.all_1st.isel(dim_1_26=13))
+    assert np.all(ds_decoded.rho_i.data == ds_raw.all_1st.isel(dim_1_26=13).data)
 
 
 def test_open_dataset_steps(test_filename):
