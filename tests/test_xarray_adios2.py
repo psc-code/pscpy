@@ -99,14 +99,14 @@ def test_open_dataset():
 def test_component():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
-    assert np.all(ds_raw.jeh.isel(comp_jeh=0) == ds_decoded.jx_ec)
+    assert np.all(ds_raw.jeh.isel(dim_1_9=0) == ds_decoded.jx_ec)
 
 
 def test_selection():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
     assert np.all(
-        ds_raw.jeh.isel(comp_jeh=0, y=slice(0, 10), z=slice(0, 40))
+        ds_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40))
         == ds_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40))
     )
 
@@ -114,14 +114,14 @@ def test_selection():
 def test_computed():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
-    ds_raw = ds_raw.assign(jx=ds_raw.jeh.isel(comp_jeh=0))
+    ds_raw = ds_raw.assign(jx=ds_raw.jeh.isel(dim_1_9=0))
     assert np.all(ds_raw.jx == ds_decoded.jx_ec)
 
 
 def test_computed_via_lambda():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
     ds_decoded = _decode_dataset(ds_raw)
-    ds_raw = ds_raw.assign(jx=lambda ds: ds.jeh.isel(comp_jeh=0))
+    ds_raw = ds_raw.assign(jx=lambda ds: ds.jeh.isel(dim_1_9=0))
     assert np.all(ds_raw.jx == ds_decoded.jx_ec)
 
 
@@ -130,7 +130,7 @@ def test_pfd_moments():
     ds_decoded = _decode_dataset(ds_raw)
     assert "all_1st" in ds_raw
     assert "rho_i" in ds_decoded
-    assert np.all(ds_decoded.rho_i == ds_raw.all_1st.isel(comp_all_1st=13))
+    assert np.all(ds_decoded.rho_i == ds_raw.all_1st.isel(dim_1_26=13))
 
 
 def test_open_dataset_steps(test_filename):
