@@ -118,6 +118,7 @@ def decode_psc(
         if var_name in field_to_component:
             for field, component in field_to_component[var_name].items():  # type: ignore[index]
                 data_vars[field] = ds[var_name].isel({f"comp_{var_name}": component})
+        ds = ds.drop_vars([var_name])
     ds = ds.assign(data_vars)
 
     if length is not None:
