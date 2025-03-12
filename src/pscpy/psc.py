@@ -111,7 +111,7 @@ def decode_psc(
         ds = ds.rename_dims(
             {
                 da.dims[0]: "step",
-                da.dims[1]: f"comp_{da.name}",
+                da.dims[1]: "component",
                 da.dims[2]: "z",
                 da.dims[3]: "y",
                 da.dims[4]: "x",
@@ -124,7 +124,7 @@ def decode_psc(
     for var_name in ds:
         if var_name in field_to_component:
             for field, component in field_to_component[var_name].items():  # type: ignore[index]
-                data_vars[field] = ds[var_name].isel({f"comp_{var_name}": component})
+                data_vars[field] = ds[var_name].isel({"component": component})
         ds = ds.drop_vars([var_name])
     ds = ds.assign(data_vars)
 
