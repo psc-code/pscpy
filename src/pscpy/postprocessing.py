@@ -5,7 +5,7 @@ from typing import Literal
 import xarray as xr
 
 
-def recenter(
+def get_recentered(
     da: xr.DataArray,
     dim: str,
     interp_dir: Literal[-1, 1],

@@ -9,7 +9,7 @@ from __future__ import annotations
 import pathlib
 
 from ._version import version as __version__
-from .postprocessing import recenter
+from .postprocessing import get_recentered
 from .psc import decode_psc
 
 sample_dir = pathlib.Path(__file__).parent / "sample"
@@ -18,6 +18,6 @@ sample_dir = pathlib.Path(__file__).parent / "sample"
 __all__ = [
     "__version__",
     "decode_psc",
-    "recenter",
+    "get_recentered",
     "sample_dir",
 ]
