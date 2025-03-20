@@ -91,6 +91,44 @@ def test_autorecenter_fc_to_cc(test_dataset_fc):
 
 
 @pytest.fixture
+def test_dataset_nc():
+    coords = [[0, 1], [0, 1, 2]]
+    dims = ["x", "y"]
+    var_nc = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
+    return xr.Dataset({"var_nc": var_nc})
+
+
+def test_autorecenter_nc_to_nc(test_dataset_nc):
+    # should do nothing
+    pscpy.auto_recenter(test_dataset_nc, "nc", x="pad", y="pad")
+    assert np.array_equal(test_dataset_nc.var_nc, [[0, 1, 2], [3, 4, 5]])
+
+
+def test_autorecenter_nc_to_cc(test_dataset_nc):
+    pscpy.auto_recenter(test_dataset_nc, "cc", x="pad", y="pad")
+    assert np.array_equal(test_dataset_nc.var_cc, [[2, 3, 3.5], [3.5, 4.5, 5]])
+
+
+@pytest.fixture
+def test_dataset_cc():
+    coords = [[0, 1], [0, 1, 2]]
+    dims = ["x", "y"]
+    var_cc = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
+    return xr.Dataset({"var_cc": var_cc})
+
+
+def test_autorecenter_cc_to_cc(test_dataset_cc):
+    # should do nothing
+    pscpy.auto_recenter(test_dataset_cc, "cc", x="pad", y="pad")
+    assert np.array_equal(test_dataset_cc.var_cc, [[0, 1, 2], [3, 4, 5]])
+
+
+def test_autorecenter_cc_to_nc(test_dataset_cc):
+    pscpy.auto_recenter(test_dataset_cc, "nc", x="pad", y="pad")
+    assert np.array_equal(test_dataset_cc.var_nc, [[0, 0.5, 1.5], [1.5, 2, 3]])
+
+
+@pytest.fixture
 def test_dataset_dont_touch():
     coords = [[0, 1, 2]]
     dims = ["x"]
