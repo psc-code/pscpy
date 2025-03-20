@@ -60,18 +60,33 @@ def auto_recenter(
         needs_rename = False
 
         for dim, boundary_method in boundaries.items():
-            if to_centering == "nc" and var_name.endswith(f"{dim}_ec") or to_centering == "cc" and var_name.endswith(f"{dim}_fc"):
-                ds[var_name] = get_recentered(ds[var_name], dim, interp_dir, boundary=boundary_method)
+            if (to_centering == "nc" and var_name.endswith(f"{dim}_ec")) or (
+                to_centering == "cc" and var_name.endswith(f"{dim}_fc")
+            ):
+                ds[var_name] = get_recentered(
+                    ds[var_name], dim, interp_dir, boundary=boundary_method
+                )
                 needs_rename = True
-            elif to_centering == "cc" and var_name.endswith(f"{dim}_ec") or to_centering == "nc" and var_name.endswith(f"{dim}_fc"):
+            elif (to_centering == "cc" and var_name.endswith(f"{dim}_ec")) or (
+                to_centering == "nc" and var_name.endswith(f"{dim}_fc")
+            ):
                 for other_dim, other_boundary_method in boundaries.items():
                     if other_dim != dim:
-                        ds[var_name] = get_recentered(ds[var_name], other_dim, interp_dir, boundary=other_boundary_method)
+                        ds[var_name] = get_recentered(
+                            ds[var_name],
+                            other_dim,
+                            interp_dir,
+                            boundary=other_boundary_method,
+                        )
                 needs_rename = True
 
-        if to_centering == "cc" and var_name.endswith("_nc") or to_centering == "nc" and var_name.endswith("_cc"):
+        if (to_centering == "cc" and var_name.endswith("_nc")) or (
+            to_centering == "nc" and var_name.endswith("_cc")
+        ):
             for dim, boundary_method in boundaries.items():
-                ds[var_name] = get_recentered(ds[var_name], dim, interp_dir, boundary=boundary_method)
+                ds[var_name] = get_recentered(
+                    ds[var_name], dim, interp_dir, boundary=boundary_method
+                )
             needs_rename = True
 
         if needs_rename:
