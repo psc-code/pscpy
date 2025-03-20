@@ -4,13 +4,14 @@ from typing import Literal
 
 import xarray as xr
 
+type BoundaryInterpMethod = Literal["periodic", "pad", "zero"]
 
 def get_recentered(
     da: xr.DataArray,
     dim: str,
     interp_dir: Literal[-1, 1],
     *,
-    boundary: Literal["periodic", "pad", "zero"] = "periodic",
+    boundary: BoundaryInterpMethod = "periodic",
 ) -> xr.DataArray:
     """
     Returns a new array with values along `dim` recentered in the direction `interp_dir`.
