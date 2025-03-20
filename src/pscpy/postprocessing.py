@@ -33,6 +33,11 @@ def get_recentered(
     return 0.5 * (da + shifted)
 
 
+def _rename_var(ds: xr.Dataset, old_name: str, new_name: str):
+    ds[new_name] = ds[old_name].rename(new_name)
+    del ds[old_name]
+
+
 def auto_recenter(
     ds: xr.Dataset,
     to_centering: Literal["nc", "cc"],
@@ -65,6 +70,4 @@ def auto_recenter(
                 needs_rename = True
 
         if needs_rename:
-            new_name = var_name[:-3] + "_" + to_centering
-            ds[new_name] = ds[var_name].rename(new_name)
-            del ds[var_name]
+            _rename_var(ds, var_name, var_name[:-3] + "_" + to_centering)
