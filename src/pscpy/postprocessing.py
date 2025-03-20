@@ -6,6 +6,7 @@ import xarray as xr
 
 type BoundaryInterpMethod = Literal["periodic", "pad", "zero"]
 
+
 def get_recentered(
     da: xr.DataArray,
     dim: str,
@@ -30,3 +31,17 @@ def get_recentered(
         shifted[{dim: boundary_idx}] = 0
 
     return 0.5 * (da + shifted)
+
+
+def auto_recenter(
+    ds: xr.Dataset,
+    to_centering: Literal["nc", "cc"],
+    **boundaries: BoundaryInterpMethod,
+):
+    """
+    Recenters variables with names matching a particular pattern to the given centering.
+
+    In particular, variable name ending in `"{dim}_ec"`, `"{dim}_fc"`, `"_nc"`, or `"_cc"`, where `dim` is a dimension name and a key in `boundaries`, is recentered appropriately. For example, if `to_centering="nc"` (node-centered), a variable ending in "x_ec" (i.e., the x-component of an edge-centered field) will be recentered along x, but not y or z, since it is already node-centered in those dimensions.
+
+    Variables are also renamed appropriately. In the example above, `ex_ec` would be renamed to `ex_nc`.
+    """
