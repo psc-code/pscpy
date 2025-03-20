@@ -45,3 +45,17 @@ def auto_recenter(
 
     Variables are also renamed appropriately. In the example above, `ex_ec` would be renamed to `ex_nc`.
     """
+
+    interp_dir = {"cc": 1, "nc": -1}[to_centering]
+
+    for var_name in ds:
+        if not isinstance(var_name, str):
+            continue
+
+        for dim, boundary_method in boundaries.items():
+            if to_centering == "nc" and var_name.endswith(f"{dim}_ec"):
+                ds[var_name] = get_recentered(ds[var_name], dim, interp_dir, boundary=boundary_method)
+
+        new_name = var_name[:-3] + "_" + to_centering
+        ds[new_name] = ds[var_name].rename(new_name)
+        del ds[var_name]
