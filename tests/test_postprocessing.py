@@ -54,22 +54,19 @@ def test_dataset_ec():
     dims = ["x", "y"]
     ex_ec = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
     ey_ec = xr.DataArray([[0, 2, 4], [1, 3, 5]], coords, dims)
-    dont_touch = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
-    return xr.Dataset({"ex_ec": ex_ec, "ey_ec": ey_ec, "dont_touch": dont_touch})
+    return xr.Dataset({"ex_ec": ex_ec, "ey_ec": ey_ec})
 
 
 def test_autorecenter_ec_to_nc(test_dataset_ec):
     pscpy.auto_recenter(test_dataset_ec, "nc", x="pad", y="pad")
     assert np.array_equal(test_dataset_ec.ex_nc, [[0, 1, 2], [1.5, 2.5, 3.5]])
     assert np.array_equal(test_dataset_ec.ey_nc, [[0, 1, 3], [1, 2, 4]])
-    assert np.array_equal(test_dataset_ec.dont_touch, [[0, 1, 2], [3, 4, 5]])
 
 
 def test_autorecenter_ec_to_cc(test_dataset_ec):
     pscpy.auto_recenter(test_dataset_ec, "cc", x="pad", y="pad")
     assert np.array_equal(test_dataset_ec.ex_cc, [[0.5, 1.5, 2], [3.5, 4.5, 5]])
     assert np.array_equal(test_dataset_ec.ey_cc, [[0.5, 2.5, 4.5], [1, 3, 5]])
-    assert np.array_equal(test_dataset_ec.dont_touch, [[0, 1, 2], [3, 4, 5]])
 
 
 @pytest.fixture
@@ -78,19 +75,30 @@ def test_dataset_fc():
     dims = ["x", "y"]
     hx_fc = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
     hy_fc = xr.DataArray([[0, 2, 4], [1, 3, 5]], coords, dims)
-    dont_touch = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
-    return xr.Dataset({"hx_fc": hx_fc, "hy_fc": hy_fc, "dont_touch": dont_touch})
+    return xr.Dataset({"hx_fc": hx_fc, "hy_fc": hy_fc})
 
 
 def test_autorecenter_fc_to_nc(test_dataset_fc):
     pscpy.auto_recenter(test_dataset_fc, "nc", x="pad", y="pad")
     assert np.array_equal(test_dataset_fc.hx_nc, [[0, 0.5, 1.5], [3, 3.5, 4.5]])
     assert np.array_equal(test_dataset_fc.hy_nc, [[0, 2, 4], [0.5, 2.5, 4.5]])
-    assert np.array_equal(test_dataset_fc.dont_touch, [[0, 1, 2], [3, 4, 5]])
 
 
 def test_autorecenter_fc_to_cc(test_dataset_fc):
     pscpy.auto_recenter(test_dataset_fc, "cc", x="pad", y="pad")
     assert np.array_equal(test_dataset_fc.hx_cc, [[1.5, 2.5, 3.5], [3, 4, 5]])
     assert np.array_equal(test_dataset_fc.hy_cc, [[1, 3, 4], [2, 4, 5]])
-    assert np.array_equal(test_dataset_fc.dont_touch, [[0, 1, 2], [3, 4, 5]])
+
+
+@pytest.fixture
+def test_dataset_dont_touch():
+    coords = [[0, 1, 2]]
+    dims = ["x"]
+    ex_ec = xr.DataArray([0, 1, 2], coords, dims)
+    dont_touch = xr.DataArray([0, 1, 2], coords, dims)
+    return xr.Dataset({"ex_ec": ex_ec, "dont_touch": dont_touch})
+
+
+def test_autorecenter_spurious_renames(test_dataset_dont_touch):
+    pscpy.auto_recenter(test_dataset_dont_touch, "cc", x="pad")
+    assert np.array_equal(test_dataset_dont_touch.dont_touch, [0, 1, 2])
