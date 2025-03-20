@@ -54,16 +54,19 @@ def test_dataset_ec():
     dims = ["x", "y"]
     ex_ec = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
     ey_ec = xr.DataArray([[0, 2, 4], [1, 3, 5]], coords, dims)
-    return xr.Dataset({"ex_ec": ex_ec, "ey_ec": ey_ec})
+    dont_touch = xr.DataArray([[0, 1, 2], [3, 4, 5]], coords, dims)
+    return xr.Dataset({"ex_ec": ex_ec, "ey_ec": ey_ec, "dont_touch": dont_touch})
 
 
 def test_autorecenter_ec_to_nc(test_dataset_ec):
     pscpy.auto_recenter(test_dataset_ec, "nc", x="pad", y="pad")
     assert np.array_equal(test_dataset_ec.ex_nc, [[0, 1, 2], [1.5, 2.5, 3.5]])
     assert np.array_equal(test_dataset_ec.ey_nc, [[0, 1, 3], [1, 2, 4]])
+    assert np.array_equal(test_dataset_ec.dont_touch, [[0, 1, 2], [3, 4, 5]])
 
 
 def test_autorecenter_ec_to_cc(test_dataset_ec):
     pscpy.auto_recenter(test_dataset_ec, "cc", x="pad", y="pad")
     assert np.array_equal(test_dataset_ec.ex_cc, [[0.5, 1.5, 2], [3.5, 4.5, 5]])
     assert np.array_equal(test_dataset_ec.ey_cc, [[0.5, 2.5, 4.5], [1, 3, 5]])
+    assert np.array_equal(test_dataset_ec.dont_touch, [[0, 1, 2], [3, 4, 5]])
