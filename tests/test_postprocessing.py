@@ -61,3 +61,9 @@ def test_autorecenter_ec_to_nc(test_dataset_ec):
     pscpy.auto_recenter(test_dataset_ec, "nc", x="pad", y="pad")
     assert np.array_equal(test_dataset_ec.ex_nc, [[0, 1, 2], [1.5, 2.5, 3.5]])
     assert np.array_equal(test_dataset_ec.ey_nc, [[0, 1, 3], [1, 2, 4]])
+
+
+def test_autorecenter_ec_to_cc(test_dataset_ec):
+    pscpy.auto_recenter(test_dataset_ec, "cc", x="pad", y="pad")
+    assert np.array_equal(test_dataset_ec.ex_cc, [[0.5, 1.5, 2], [3.5, 4.5, 5]])
+    assert np.array_equal(test_dataset_ec.ey_cc, [[0.5, 2.5, 4.5], [1, 3, 5]])
