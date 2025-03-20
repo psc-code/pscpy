@@ -69,5 +69,10 @@ def auto_recenter(
                         ds[var_name] = get_recentered(ds[var_name], other_dim, interp_dir, boundary=other_boundary_method)
                 needs_rename = True
 
+        if to_centering == "cc" and var_name.endswith("_nc") or to_centering == "nc" and var_name.endswith("_cc"):
+            for dim, boundary_method in boundaries.items():
+                ds[var_name] = get_recentered(ds[var_name], dim, interp_dir, boundary=boundary_method)
+            needs_rename = True
+
         if needs_rename:
             _rename_var(ds, var_name, var_name[:-3] + "_" + to_centering)
