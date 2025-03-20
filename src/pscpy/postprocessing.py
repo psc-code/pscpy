@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import xarray as xr
 
-type BoundaryInterpMethod = Literal["periodic", "pad", "zero"]
+BoundaryInterpMethod: TypeAlias = Literal["periodic", "pad", "zero"]
 
 
 def get_recentered(
@@ -33,7 +33,7 @@ def get_recentered(
     return 0.5 * (da + shifted)
 
 
-def _rename_var(ds: xr.Dataset, old_name: str, new_name: str):
+def _rename_var(ds: xr.Dataset, old_name: str, new_name: str) -> None:
     ds[new_name] = ds[old_name].rename(new_name)
     del ds[old_name]
 
@@ -42,7 +42,7 @@ def auto_recenter(
     ds: xr.Dataset,
     to_centering: Literal["nc", "cc"],
     **boundaries: BoundaryInterpMethod,
-):
+) -> None:
     """
     Recenters variables with names matching a particular pattern to the given centering.
 
@@ -51,7 +51,7 @@ def auto_recenter(
     Variables are also renamed appropriately. In the example above, `ex_ec` would be renamed to `ex_nc`.
     """
 
-    interp_dir = {"cc": 1, "nc": -1}[to_centering]
+    interp_dir: Literal[-1, 1] = {"cc": 1, "nc": -1}[to_centering]  # type: ignore[assignment]
 
     for var_name in ds:
         if not isinstance(var_name, str):
