@@ -32,7 +32,7 @@ class RunInfo:
         self.z = self._get_coord(2)
 
     def _get_coord(self, coord_idx: int) -> NDArray[Any]:
-        return np.linspace(  # type: ignore[no-any-return]
+        return np.linspace(
             start=self.corner[coord_idx],
             stop=self.corner[coord_idx] + self.length[coord_idx],
             num=self.gdims[coord_idx],
