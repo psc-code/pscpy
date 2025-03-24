@@ -140,3 +140,16 @@ def test_dataset_dont_touch():
 def test_autorecenter_spurious_renames(test_dataset_dont_touch):
     pscpy.auto_recenter(test_dataset_dont_touch, "cc", x="pad")
     assert np.array_equal(test_dataset_dont_touch.dont_touch, [0, 1, 2])
+
+
+@pytest.fixture
+def test_dataset_nonstr_varname():
+    coords = [[0, 1, 2]]
+    dims = ["x"]
+    one = xr.DataArray([0, 1, 2], coords, dims)
+    return xr.Dataset({1: one})
+
+
+def test_nonstr_varname(test_dataset_nonstr_varname):
+    pscpy.auto_recenter(test_dataset_nonstr_varname, "nc", x="pad")
+    assert np.array_equal(test_dataset_nonstr_varname[1], [0, 1, 2])
