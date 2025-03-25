@@ -113,9 +113,12 @@ def test_selection(ds_pfd_raw, ds_pfd_decoded):
     assert np.all(data_raw == data_decoded)
 
 
-def test_nbytes(ds_pfd_decoded):
-    # FIXME this passes, go figure
-    assert ds_pfd_decoded.nbytes == ds_pfd_decoded.nbytes
+def _get_nbytes(ds: xr.Dataset) -> int:
+    return sum(arr.nbytes for arr in ds.data_vars.values())
+
+
+def test_nbytes(ds_pfd_raw, ds_pfd_decoded):
+    assert _get_nbytes(ds_pfd_raw) == _get_nbytes(ds_pfd_decoded)
 
 
 def test_missing_length(ds_pfd_raw):
