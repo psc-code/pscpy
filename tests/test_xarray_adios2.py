@@ -119,7 +119,7 @@ def test_nbytes():
 
 def test_missing_length():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r".*length.*"):
         pscpy.decode_psc(
             ds_raw,
             species_names=["e", "i"],
@@ -129,7 +129,7 @@ def test_missing_length():
 
 def test_missing_corner():
     ds_raw = _open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r".*corner.*"):
         pscpy.decode_psc(
             ds_raw,
             species_names=["e", "i"],
