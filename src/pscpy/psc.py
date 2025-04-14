@@ -27,6 +27,13 @@ class RunInfo:
         self.length = ds.attrs.get("length", length)
         self.corner = ds.attrs.get("corner", corner)
 
+        if self.length is None:
+            message = "Dataset is missing length. A value must be manually provided."
+            raise ValueError(message)
+        if self.corner is None:
+            message = "Dataset is missing corner. A value must be manually provided."
+            raise ValueError(message)
+
         self.x = self._get_coord(0)
         self.y = self._get_coord(1)
         self.z = self._get_coord(2)
@@ -121,13 +128,12 @@ def decode_psc(
         ds = ds.drop_vars([var_name])
     ds = ds.assign(data_vars)
 
-    if length is not None:
-        run_info = RunInfo(ds, length=length, corner=corner)
-        coords = {
-            "x": ("x", run_info.x),
-            "y": ("y", run_info.y),
-            "z": ("z", run_info.z),
-        }
-        ds = ds.assign_coords(coords)
+    run_info = RunInfo(ds, length=length, corner=corner)
+    coords = {
+        "x": ("x", run_info.x),
+        "y": ("y", run_info.y),
+        "z": ("z", run_info.z),
+    }
+    ds = ds.assign_coords(coords)
 
     return ds
