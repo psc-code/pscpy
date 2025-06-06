@@ -100,7 +100,9 @@ def test_open_dataset(ds_pfd_decoded):
     assert "jx_ec" in ds_pfd_decoded
     assert ds_pfd_decoded.coords.keys() == set({"x", "y", "z"})
     assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
-    assert np.allclose(ds_pfd_decoded.jx_ec.z.data, np.linspace(-25.6, 25.6, 512, endpoint=False).data)
+    assert np.allclose(
+        ds_pfd_decoded.jx_ec.z.data, np.linspace(-25.6, 25.6, 512, endpoint=False).data
+    )
 
 
 def test_component(ds_pfd_raw, ds_pfd_decoded):
@@ -108,7 +110,9 @@ def test_component(ds_pfd_raw, ds_pfd_decoded):
 
 
 def test_selection(ds_pfd_raw, ds_pfd_decoded):
-    data_raw = ds_pfd_raw.jeh.isel(dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)).data
+    data_raw = ds_pfd_raw.jeh.isel(
+        dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)
+    ).data
     data_decoded = ds_pfd_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40)).data
     assert np.all(data_raw == data_decoded)
 
@@ -152,7 +156,10 @@ def test_computed_via_lambda(ds_pfd_raw, ds_pfd_decoded):
 def test_pfd_moments(ds_pfd_moments_raw, ds_pfd_moments_decoded):
     assert "all_1st" in ds_pfd_moments_raw
     assert "rho_i" in ds_pfd_moments_decoded
-    assert np.all(ds_pfd_moments_decoded.rho_i.data == ds_pfd_moments_raw.all_1st.isel(dim_1_26=13).data)
+    assert np.all(
+        ds_pfd_moments_decoded.rho_i.data
+        == ds_pfd_moments_raw.all_1st.isel(dim_1_26=13).data
+    )
 
 
 def test_open_dataset_steps(test_filename):
@@ -200,7 +207,9 @@ def test_open_dataset_3_step(test_filename_3, mode):
     with adios2py.File(test_filename_3, mode=mode) as file:
         for n, step in enumerate(file.steps):
             ds = xr.open_dataset(Adios2Store(step))
-            assert ds.time == np.datetime64("2020-01-01T00:01:40") + np.timedelta64(10 * n, "s")
+            assert ds.time == np.datetime64("2020-01-01T00:01:40") + np.timedelta64(
+                10 * n, "s"
+            )
 
 
 def test_open_dataset_4(test_filename_4):
