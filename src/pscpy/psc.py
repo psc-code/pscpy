@@ -66,7 +66,7 @@ def get_field_to_component(species_names: Iterable[str]) -> dict[str, dict[str, 
     field_to_component["dive"] = {"dive": 0}
     field_to_component["rho"] = {"rho": 0}
     field_to_component["d_rho"] = {"d_rho": 0}
-    field_to_component["div_j"] = {"div_j": 0}
+    field_to_component["dt_divj"] = {"dt_divj": 0}
 
     # keeping 'all_1st' for backwards compatibility
     field_to_component["all_1st"] = {}
