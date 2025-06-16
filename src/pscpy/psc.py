@@ -51,17 +51,15 @@ class RunInfo:
 
 
 def iter_components(field: Hashable, species_names: Iterable[str]) -> Generator[str]:
-    # fmt: off
     if field == "jeh":
-        yield from ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]
+        yield from ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]  # fmt: off
     elif field in ["dive", "rho", "d_rho", "dt_divj"]:
         yield str(field)
     elif field in ["all_1st", "all_1st_cc"]:
-        moments = ["rho", "jx", "jy", "jz", "px", "py", "pz", "txx", "tyy", "tzz", "txy", "tyz", "tzx"]
+        moments = ["rho", "jx", "jy", "jz", "px", "py", "pz", "txx", "tyy", "tzz", "txy", "tyz", "tzx"]  # fmt: off
         for species_name in species_names:
             for moment in moments:
                 yield f"{moment}_{species_name}"
-    # fmt: on
 
 
 def decode_psc(
