@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Generator, Hashable, Iterable
 from typing import Any
 
 import numpy as np
@@ -50,16 +50,17 @@ class RunInfo:
         return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
 
 
-def get_components(field: str, species_names: Iterable[str]) -> list[str] | None:
+def iter_components(field: Hashable, species_names: Iterable[str]) -> Generator[str]:
     # fmt: off
     if field == "jeh":
-        return ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]
+        yield from ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]
     elif field in ["dive", "rho", "d_rho", "dt_divj"]:
-        return [field]
+        yield str(field)
     elif field in ["all_1st", "all_1st_cc"]:
         moments = ["rho", "jx", "jy", "jz", "px", "py", "pz", "txx", "tyy", "tzz", "txy", "tyz", "tzx"]
-        return [f"{moment}_{species_name}" for species_name in species_names for moment in moments]
-    return None
+        for species_name in species_names:
+            for moment in moments:
+                yield f"{moment}_{species_name}"
     # fmt: on
 
 
@@ -86,10 +87,10 @@ def decode_psc(
 
     data_vars = {}
     for var_name in ds:
-        components = get_components(str(var_name), species_names)
-        if components is not None:
-            for component_idx, component in enumerate(components):
-                data_vars[component] = ds[var_name][component_idx, :, :, :]
+        for component_idx, component in enumerate(
+            iter_components(var_name, species_names)
+        ):
+            data_vars[component] = ds[var_name][component_idx, :, :, :]
         ds = ds.drop_vars([var_name])
     ds = ds.assign(data_vars)
 
