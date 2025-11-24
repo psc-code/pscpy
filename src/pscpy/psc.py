@@ -84,11 +84,11 @@ def decode_psc(
     ds = ds.squeeze("step")
 
     for var_name in ds:
-        for component_idx, component in enumerate(
-            iter_components(var_name, species_names)
-        ):
+        components = list(iter_components(var_name, species_names))
+        for component_idx, component in enumerate(components):
             ds = ds.assign({component: ds[var_name][component_idx, :, :, :]})
-        ds = ds.drop_vars([var_name])
+        if var_name not in components:
+            ds = ds.drop_vars([var_name])
 
     run_info = RunInfo(ds, length=length, corner=corner)
     coords = {
