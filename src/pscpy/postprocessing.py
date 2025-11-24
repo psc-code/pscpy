@@ -30,7 +30,7 @@ def get_recentered(
     elif boundary == "zero":
         shifted[{dim: boundary_idx}] = 0
 
-    return 0.5 * (da + shifted)  # type: ignore
+    return 0.5 * (da + shifted)  # type: ignore[no-any-return]
 
 
 def _rename_var(ds: xr.Dataset, old_name: str, new_name: str) -> None:
