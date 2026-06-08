@@ -34,9 +34,14 @@ class RunInfo:
             message = "Dataset is missing corner. A value must be manually provided."
             raise ValueError(message)
 
-        self.x = self._get_coord(0)
-        self.y = self._get_coord(1)
-        self.z = self._get_coord(2)
+        if "x" in ds.coords:
+            self.x = ds.coords["x"].values
+            self.y = ds.coords["y"].values
+            self.z = ds.coords["z"].values
+        else:
+            self.x = self._get_coord(0)
+            self.y = self._get_coord(1)
+            self.z = self._get_coord(2)
 
     def _get_coord(self, coord_idx: int) -> NDArray[Any]:
         return np.linspace(
@@ -87,14 +92,16 @@ def decode_psc(
                 dims[4]: "x",
             }
         )
-    ds = ds.squeeze("step")
+    if "step" in ds.dims:
+        ds = ds.squeeze("step")
 
     for var_name in ds:
         components = list(iter_components(var_name, species_names))
-        for component_idx, component in enumerate(components):
-            ds = ds.assign({component: ds[var_name].isel(component=component_idx)})
-        if var_name not in components:
-            ds = ds.drop_vars([var_name])
+        if components:
+            for component_idx, component in enumerate(components):
+                ds = ds.assign({component: ds[var_name].isel(component=component_idx)})
+            if var_name not in components:
+                ds = ds.drop_vars([var_name])
 
     run_info = RunInfo(ds, length=length, corner=corner)
     coords = {
