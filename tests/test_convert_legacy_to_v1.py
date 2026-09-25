@@ -16,6 +16,12 @@ from pscpy.convert.legacy_to_v1 import (
 
 LEGACY_DIR = pscpy.sample_dir / "legacy"
 V1_DIR = pscpy.sample_dir / "v1"
+SAMPLE_FILES = [
+    "continuity.000000001.bp",
+    "gauss.000000001.bp",
+    "pfd.000000001.bp",
+    "pfd_moments.000000001.bp",
+]
 
 # old samples without length/corner attrs; values match the old decode tests
 LENGTH_400 = [1, 12.8, 51.2]
@@ -40,7 +46,7 @@ def legacy_attrs():
     }
 
 
-@pytest.mark.parametrize("filename", ["pfd.000000001.bp", "pfd_moments.000000001.bp"])
+@pytest.mark.parametrize("filename", SAMPLE_FILES)
 def test_matches_psc_v1(tmp_path, filename):
     """Converting legacy output gives exactly what the v1 writer produces."""
     dst = tmp_path / filename
@@ -233,16 +239,12 @@ def test_main(tmp_path, capsys):
             str(outdir),
             "--species",
             "e,i",
-            str(LEGACY_DIR / "pfd.000000001.bp"),
-            str(LEGACY_DIR / "pfd_moments.000000001.bp"),
+            *(str(LEGACY_DIR / name) for name in SAMPLE_FILES),
         ]
     )
 
-    assert sorted(p.name for p in outdir.iterdir()) == [
-        "pfd.000000001.bp",
-        "pfd_moments.000000001.bp",
-    ]
-    for name in ["pfd.000000001.bp", "pfd_moments.000000001.bp"]:
+    assert sorted(p.name for p in outdir.iterdir()) == SAMPLE_FILES
+    for name in SAMPLE_FILES:
         xr.testing.assert_identical(
             xr.open_dataset(outdir / name), xr.open_dataset(V1_DIR / name)
         )
