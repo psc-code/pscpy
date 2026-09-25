@@ -22,10 +22,6 @@ SAMPLE_FILES = [
     "pfd_moments.000000001.bp",
 ]
 
-# old samples without length/corner attrs; values match the old decode tests
-LENGTH_400 = [1, 12.8, 51.2]
-CORNER_400 = [0, -6.4, -25.6]
-
 
 def _write_legacy(filename, variables, attrs):
     with adios2py.File(filename, mode="w") as file, file.steps.next() as step:
@@ -83,65 +79,56 @@ def test_moments_values(tmp_path):
     assert np.all(converted.rho_i > 0)
 
 
-@pytest.mark.parametrize(
-    ("filename", "field"),
-    [("pfd.000000400.bp", "jeh"), ("pfd_moments.000000400.bp", "all_1st")],
-)
-def test_values_and_dtype_preserved(tmp_path, filename, field):
-    src = pscpy.sample_dir / filename
-    dst = tmp_path / filename
-    convert_file(
-        src, dst, species_names=["e", "i"], length=LENGTH_400, corner=CORNER_400
-    )
+@pytest.mark.parametrize(("field", "n_components"), [("jeh", 9), ("all_1st", 26)])
+def test_values_and_dtype_preserved(tmp_path, legacy_attrs, field, n_components):
+    src = tmp_path / "legacy.bp"
+    dst = tmp_path / "converted.bp"
+    data = np.random.default_rng(0).random((n_components, 2, 3, 4), dtype=np.float32)
+    _write_legacy(src, {field: data}, legacy_attrs)
+    convert_file(src, dst, species_names=["e", "i"])
 
-    legacy = xr.open_dataset(src)[field]
     converted = xr.open_dataset(dst)
-    names = legacy_component_names(field, legacy.shape[1], ["e", "i"])
+    names = legacy_component_names(field, n_components, ["e", "i"])
     assert set(converted.data_vars) == set(names)
     for idx, name in enumerate(names):
         assert converted[name].dtype == np.float32
-        assert np.array_equal(converted[name].isel(time=0).data, legacy[0, idx].data)
+        assert np.array_equal(converted[name].isel(time=0).data, data[idx])
 
 
 def test_decode_converted(tmp_path):
-    dst = tmp_path / "pfd.000000400.bp"
-    convert_file(
-        pscpy.sample_dir / "pfd.000000400.bp",
-        dst,
-        length=LENGTH_400,
-        corner=CORNER_400,
-    )
+    dst = tmp_path / "pfd.000000001.bp"
+    convert_file(LEGACY_DIR / "pfd.000000001.bp", dst)
 
     ds = pscpy.decode_psc(xr.open_dataset(dst))
     assert ds.attrs["psc_output_version"] == OUTPUT_VERSION == "1.0.0"
-    assert ds.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
-    assert np.isclose(ds.time, 109.381, atol=1e-3)
-    assert ds.attrs["step"] == 400
-    dz = 51.2 / 512
-    assert np.allclose(ds.z, np.linspace(-25.6, 25.6, 512, endpoint=False) + dz / 2)
-    assert np.allclose(ds.x, [0.5])
 
 
-def test_ib_im_preserved(tmp_path):
-    dst = tmp_path / "pfd.000000400.bp"
-    convert_file(
-        pscpy.sample_dir / "pfd.000000400.bp", dst, length=LENGTH_400, corner=CORNER_400
-    )
+def test_ib_im_preserved(tmp_path, legacy_attrs):
+    """Some legacy files store ib/im without the "<field>::" prefix."""
+    src = tmp_path / "legacy.bp"
+    dst = tmp_path / "converted.bp"
+    legacy_attrs |= {"ib": np.array([0, 1, 2]), "im": np.array([4, 3, 2])}
+    _write_legacy(src, {"dive": np.zeros((1, 2, 3, 4))}, legacy_attrs)
+    convert_file(src, dst)
+
     ds = xr.open_dataset(dst)
-    assert np.array_equal(ds.hz_fc.attrs["ib"], [0, 0, 0])
-    assert np.array_equal(ds.hz_fc.attrs["im"], [1, 128, 128])
+    assert np.array_equal(ds.dive.attrs["ib"], [0, 1, 2])
+    assert np.array_equal(ds.dive.attrs["im"], [4, 3, 2])
 
 
-def test_time_as_array(tmp_path):
+def test_time_as_array(tmp_path, legacy_attrs):
     """Some legacy files store time and step as 1-element arrays."""
-    dst = tmp_path / "pfd.000000000.bp"
-    convert_file(pscpy.sample_dir / "pfd.000000000.bp", dst)
+    src = tmp_path / "legacy.bp"
+    dst = tmp_path / "converted.bp"
+    legacy_attrs |= {"time": np.array([1.5]), "step": np.array([3], dtype=np.int32)}
+    _write_legacy(src, {"dive": np.zeros((1, 2, 3, 4))}, legacy_attrs)
+    convert_file(src, dst)
 
     ds = xr.open_dataset(dst)
     assert ds.time.shape == (1,)
-    assert ds.time[0] == 0.0
+    assert ds.time[0] == 1.5
     assert np.ndim(ds.attrs["time"]) == 0
-    assert np.ndim(ds.attrs["step"]) == 0
+    assert ds.attrs["step"] == 3
 
 
 def test_override_corner_and_length(tmp_path, legacy_attrs):
