@@ -64,6 +64,8 @@ repos:
           - pytest
           - xarray
           - adios2py
+          # numpy 2.5 stubs use PEP 695 syntax, rejected with python_version 3.10
+          - numpy<2.5
 
   - repo: https://github.com/codespell-project/codespell
     rev: "v2.3.0"
