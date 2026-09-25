@@ -6,8 +6,6 @@ import pytest
 import xarray as xr
 from xarray_adios2 import Adios2Store
 
-import pscpy
-
 
 # FIXME, duplicated
 @pytest.fixture
@@ -41,11 +39,11 @@ def test_open_with_parameters(test_store):
         assert store.ds.parameters == params
 
 
-def test_open_with_engine():
+def test_open_with_engine(latest_sample_dir):
     with Adios2Store.open(
-        str(pscpy.sample_dir / "pfd.000000400.bp"), engine_type="BP4"
+        str(latest_sample_dir / "pfd.000000001.bp"), engine_type="BP5"
     ) as store:
-        assert store.ds.engine_type == "BP4"
+        assert store.ds.engine_type == "BP5"
 
 
 def test_vars_attrs(test_store):
