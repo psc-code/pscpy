@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import xarray as xr
 
-PSC_OUTPUT_VERSION = "1.0.0"
-"""The psc output format version written by `pscpy.convert`."""
-
 SUPPORTED_MAJOR_VERSION = 1
 
 
