@@ -7,12 +7,12 @@ import xarray as xr
 
 import pscpy
 from pscpy.convert.legacy_to_v1 import (
+    OUTPUT_VERSION,
     _cell_centers,
     convert_file,
     legacy_component_names,
     main,
 )
-from pscpy.psc import PSC_OUTPUT_VERSION
 
 LEGACY_DIR = pscpy.sample_dir / "legacy"
 V1_DIR = pscpy.sample_dir / "v1"
@@ -109,7 +109,7 @@ def test_decode_converted(tmp_path):
     )
 
     ds = pscpy.decode_psc(xr.open_dataset(dst))
-    assert ds.attrs["psc_output_version"] == PSC_OUTPUT_VERSION
+    assert ds.attrs["psc_output_version"] == OUTPUT_VERSION == "1.0.0"
     assert ds.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
     assert np.isclose(ds.time, 109.381, atol=1e-3)
     assert ds.attrs["step"] == 400

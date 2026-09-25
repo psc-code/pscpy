@@ -26,7 +26,8 @@ import adios2py
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ..psc import PSC_OUTPUT_VERSION
+OUTPUT_VERSION = "1.0.0"
+"""The psc_output_version this converter writes (not necessarily the latest)."""
 
 JEH_COMPONENTS = ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]  # fmt: skip
 FIELD_COMPONENTS = {
@@ -155,7 +156,7 @@ def convert_file(
     gdims = gdims_zyx[::-1]
 
     with adios2py.File(dst, mode="w") as out, out.steps.next() as step:
-        out.attrs["psc_output_version"] = PSC_OUTPUT_VERSION
+        out.attrs["psc_output_version"] = OUTPUT_VERSION
         out.attrs["step"] = step_num
         out.attrs["time"] = time
         out.attrs["length"] = length_arr
@@ -182,7 +183,7 @@ def convert_file(
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="python -m pscpy.convert.legacy_to_v1",
-        description=f"Convert legacy psc .bp output to psc_output_version {PSC_OUTPUT_VERSION}.",
+        description=f"Convert legacy psc .bp output to psc_output_version {OUTPUT_VERSION}.",
     )
     parser.add_argument("src", nargs="+", type=pathlib.Path, help="legacy .bp files")
     parser.add_argument(
