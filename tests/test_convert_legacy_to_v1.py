@@ -57,11 +57,17 @@ def test_matches_psc_v1(tmp_path, filename):
 
 def test_cell_centers_rounding():
     """psc's coordinates are rounded like an fma, not a multiply then add."""
-    ds = xr.open_dataset(V1_DIR / "pfd.000000001.bp")
-    corner, length, n = ds.attrs["corner"][1], ds.attrs["length"][1], ds.y.size
+    # y coordinates written by psc for corner=-0.4, length=0.8, n=16 (the
+    # current samples have exactly representable cell widths, so can't be used)
+    corner, length, n = -0.4, 0.8, 16
+    psc_y = [
+        -0.375, -0.325, -0.275, -0.225, -0.17500000000000002, -0.125,
+        -0.07500000000000001, -0.025, 0.025, 0.07500000000000001, 0.125,
+        0.17500000000000002, 0.225, 0.275, 0.325, 0.375,
+    ]  # fmt: skip
     naive = [corner + (i + 0.5) * (length / n) for i in range(n)]
-    assert ds.y.values.tolist() != naive  # otherwise this test doesn't test anything
-    assert np.array_equal(_cell_centers(corner, length, n), ds.y)
+    assert psc_y != naive  # otherwise this test doesn't test anything
+    assert _cell_centers(corner, length, n).tolist() == psc_y
 
 
 def test_moments_values(tmp_path):
