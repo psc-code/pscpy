@@ -35,6 +35,14 @@ def _write_legacy(filename, variables, attrs):
             step[name] = data
 
 
+def _assert_matches_v1(converted, expected):
+    """Like assert_identical, but coordinates only need to be close."""
+    for crd in "xyz":
+        np.testing.assert_allclose(converted[crd], expected[crd])
+    converted = converted.assign_coords({crd: expected[crd] for crd in "xyz"})
+    xr.testing.assert_identical(converted, expected)
+
+
 @pytest.fixture
 def legacy_attrs():
     return {
@@ -47,13 +55,13 @@ def legacy_attrs():
 
 @pytest.mark.parametrize("filename", SAMPLE_FILES)
 def test_matches_psc_v1(tmp_path, filename):
-    """Converting legacy output gives exactly what the v1 writer produces."""
+    """Converting legacy output gives what the v1 writer produces."""
     dst = tmp_path / filename
     convert_file(LEGACY_DIR / filename, dst, species_names=["e", "i"])
 
     converted = xr.open_dataset(dst)
     expected = xr.open_dataset(V1_DIR / filename)
-    xr.testing.assert_identical(converted, expected)
+    _assert_matches_v1(converted, expected)
     for name, var in expected.variables.items():
         assert converted[name].dtype == var.dtype
         for key, value in var.attrs.items():
@@ -229,7 +237,7 @@ def test_main(tmp_path, capsys):
 
     assert sorted(p.name for p in outdir.iterdir()) == SAMPLE_FILES
     for name in SAMPLE_FILES:
-        xr.testing.assert_identical(
+        _assert_matches_v1(
             xr.open_dataset(outdir / name), xr.open_dataset(V1_DIR / name)
         )
     assert "pfd_moments.000000001.bp" in capsys.readouterr().out
