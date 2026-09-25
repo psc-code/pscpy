@@ -7,7 +7,7 @@ cell-centered x/y/z coordinates and a scalar "time" variable.
 
 Usage::
 
-    python -m pscpy.convert -o OUTDIR [--species e i] [--length LX LY LZ]
+    python -m pscpy.convert -o OUTDIR [--species e,i] [--length LX LY LZ]
         [--corner CX CY CZ] SRC.bp [SRC.bp ...]
 
 Each SRC.bp is written to OUTDIR with the same file name.
@@ -189,7 +189,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         "-o", "--outdir", required=True, type=pathlib.Path, help="output directory"
     )
     parser.add_argument(
-        "--species", nargs="+", help="species names, required for moments (e.g. e i)"
+        "--species",
+        type=lambda arg: arg.split(","),
+        help="comma-separated species names, required for moments (e.g. e,i)",
     )
     parser.add_argument(
         "--length", nargs=3, type=float, help="domain length, if missing from the file"
