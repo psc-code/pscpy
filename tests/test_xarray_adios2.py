@@ -68,13 +68,13 @@ def test_filename_4(tmp_path):
 
 
 @pytest.fixture
-def ds_pfd_raw() -> xr.Dataset:
-    return xr.open_dataset(pscpy.sample_dir / "v1" / "pfd.000000001.bp")
+def ds_pfd_raw(latest_sample_dir) -> xr.Dataset:
+    return xr.open_dataset(latest_sample_dir / "pfd.000000001.bp")
 
 
 @pytest.fixture
-def ds_pfd_moments_raw() -> xr.Dataset:
-    return xr.open_dataset(pscpy.sample_dir / "v1" / "pfd_moments.000000001.bp")
+def ds_pfd_moments_raw(latest_sample_dir) -> xr.Dataset:
+    return xr.open_dataset(latest_sample_dir / "pfd_moments.000000001.bp")
 
 
 @pytest.fixture
