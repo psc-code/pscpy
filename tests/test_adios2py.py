@@ -5,12 +5,17 @@ import adios2py
 import numpy as np
 import pytest
 
-import pscpy
+PFD_ATTRS = {"corner", "length", "psc_output_version", "step", "step_dimension", "time"}
 
 
 @pytest.fixture
-def pfd_file():
-    return adios2py.File(pscpy.sample_dir / "pfd.000000400.bp", mode="rra")
+def pfd_filename(latest_sample_dir):
+    return latest_sample_dir / "pfd.000000001.bp"
+
+
+@pytest.fixture
+def pfd_file(pfd_filename):
+    return adios2py.File(pfd_filename, mode="rra")
 
 
 @pytest.fixture
@@ -38,24 +43,20 @@ def test_open_close(pfd_file):
     assert not pfd_file  # is closed
 
 
-def test_open_twice():
-    file1 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
-    file2 = adios2py.File(pscpy.sample_dir / "pfd.000000400.bp")  # noqa: F841
+def test_open_twice(pfd_filename):
+    file1 = adios2py.File(pfd_filename)  # noqa: F841
+    file2 = adios2py.File(pfd_filename)  # noqa: F841
 
 
-def test_open_with_parameters():
+def test_open_with_parameters(pfd_filename):
     params = {"OpenTimeoutSecs": "15"}
-    with adios2py.File(
-        pscpy.sample_dir / "pfd.000000400.bp", parameters=params
-    ) as file:
+    with adios2py.File(pfd_filename, parameters=params) as file:
         assert file.parameters == params
 
 
-def test_open_with_engine():
-    with adios2py.File(
-        pscpy.sample_dir / "pfd.000000400.bp", engine_type="BP4"
-    ) as file:
-        assert file.engine_type == "BP4"
+def test_open_with_engine(pfd_filename):
+    with adios2py.File(pfd_filename, engine_type="BP5") as file:
+        assert file.engine_type == "BP5"
 
 
 def test_with(pfd_file):
@@ -68,27 +69,30 @@ def test_file_repr(pfd_file):
 
 
 def test_keys(pfd_file):
-    assert pfd_file.keys() == set({"jeh"})
+    assert pfd_file.keys() == {
+        "jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc",
+        "time", "x", "y", "z",
+    }  # fmt: skip
 
 
 def test_attrs_keys(pfd_file):
-    assert pfd_file.attrs.keys() == set({"ib", "im", "step", "time"})
+    assert pfd_file.attrs.keys() == PFD_ATTRS
 
 
 def test_attrs_contains(pfd_file):
-    assert "ib" in pfd_file.attrs
+    assert "corner" in pfd_file.attrs
     assert "ix" not in pfd_file.attrs
 
 
 def test_attrs_iter(pfd_file):
-    assert set(pfd_file.attrs) == set({"ib", "im", "step", "time"})
+    assert set(pfd_file.attrs) == PFD_ATTRS
 
 
 def test_get_variable(pfd_file):
-    var = pfd_file["jeh"]
-    assert var.name == "jeh"
-    assert var.shape == (1, 9, 512, 128, 1)
-    assert var.dtype == np.float32
+    var = pfd_file["jx_ec"]
+    assert var.name == "jx_ec"
+    assert var.shape == (1, 4, 8, 1)
+    assert var.dtype == np.float64
 
 
 def test_get_variable_not_found(pfd_file):
@@ -98,40 +102,40 @@ def test_get_variable_not_found(pfd_file):
 
 def test_variable_bool(pfd_file):
     with pfd_file:
-        var = pfd_file["jeh"]
+        var = pfd_file["jx_ec"]
         assert var
-        assert var.shape == (1, 9, 512, 128, 1)
+        assert var.shape == (1, 4, 8, 1)
 
     assert not var
 
 
 def test_variable_shape(pfd_file):
     with pfd_file:
-        var = pfd_file["jeh"]
-        assert var.shape == (1, 9, 512, 128, 1)
+        var = pfd_file["jx_ec"]
+        assert var.shape == (1, 4, 8, 1)
 
 
 def test_variable_name(pfd_file):
     with pfd_file:
-        var = pfd_file["jeh"]
-        assert var.name == "jeh"
+        var = pfd_file["jx_ec"]
+        assert var.name == "jx_ec"
 
 
 def test_variable_dtype(pfd_file):
     with pfd_file:
-        var = pfd_file["jeh"]
-        assert var.dtype == np.float32
+        var = pfd_file["jx_ec"]
+        assert var.dtype == np.float64
 
 
 def test_variable_repr(pfd_file):
     with pfd_file:
-        var = pfd_file["jeh"]
-        assert "name=jeh" in repr(var)
+        var = pfd_file["jx_ec"]
+        assert "name=jx_ec" in repr(var)
 
 
 @pytest.mark.skip
 def test_variable_is_reverse_dims(pfd_file):
-    var = pfd_file["jeh"]
+    var = pfd_file["jx_ec"]
     assert not var._is_reverse_dims()
 
     # with adios2py.File(
@@ -184,10 +188,10 @@ def test_variable_array(test_file):
 
 
 def test_get_attribute(pfd_file):
-    assert all(pfd_file.attrs["ib"] == (0, 0, 0))
-    assert all(pfd_file.attrs["im"] == (1, 128, 128))
-    assert np.isclose(pfd_file.attrs["time"], 109.38)
-    assert pfd_file.attrs["step"] == 400
+    assert all(pfd_file.attrs["corner"] == (0.0, -5.0, -2.5))
+    assert all(pfd_file.attrs["length"] == (1.0, 10.0, 5.0))
+    assert np.isclose(pfd_file.attrs["time"], 0.7955)
+    assert pfd_file.attrs["step"] == 1
 
 
 def test_write_streaming(tmp_path):
