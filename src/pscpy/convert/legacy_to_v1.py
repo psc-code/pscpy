@@ -19,7 +19,6 @@ import argparse
 import os
 import pathlib
 from collections.abc import Sequence
-from fractions import Fraction
 from typing import Any
 
 import adios2py
@@ -75,16 +74,8 @@ def _unwrap_scalar(value: Any) -> Any:
     return arr[0]
 
 
-def _fma(a: float, b: float, c: float) -> float:
-    """a * b + c with a single rounding, like math.fma (Python >= 3.13)."""
-    return float(Fraction(a) * Fraction(b) + Fraction(c))
-
-
 def _cell_centers(corner: float, length: float, n: int) -> NDArray[np.float64]:
-    # same expression as psc's writer, which the compiler contracts into an
-    # fma, so the result is bitwise identical
-    dx = length / n
-    return np.array([_fma(i + 0.5, dx, corner) for i in range(n)], dtype=np.float64)
+    return corner + (np.arange(n, dtype=np.float64) + 0.5) * (length / n)
 
 
 def _get_domain_attr(
