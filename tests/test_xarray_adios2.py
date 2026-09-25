@@ -97,18 +97,18 @@ def test_open_dataset(ds_pfd_decoded):
     }  # fmt: skip
     assert ds_pfd_decoded.coords.keys() == set({"x", "y", "z", "time"})
     assert ds_pfd_decoded.jx_ec.dims == ("z", "y", "x")
-    assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=16, z=4)  # noqa: C408
+    assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=8, z=4)  # noqa: C408
 
 
 def test_coords(ds_pfd_decoded):
-    assert np.allclose(ds_pfd_decoded.x, _cell_centers(0.0, 0.05, 1))
-    assert np.allclose(ds_pfd_decoded.y, _cell_centers(-0.4, 0.8, 16))
-    assert np.allclose(ds_pfd_decoded.z, _cell_centers(0.0, 60.0, 4))
+    assert np.allclose(ds_pfd_decoded.x, _cell_centers(0.0, 1.0, 1))
+    assert np.allclose(ds_pfd_decoded.y, _cell_centers(-5.0, 10.0, 8))
+    assert np.allclose(ds_pfd_decoded.z, _cell_centers(-2.5, 5.0, 4))
 
 
 def test_time(ds_pfd_decoded):
     assert ds_pfd_decoded.time.ndim == 0
-    assert ds_pfd_decoded.time == 0.03499980555717591
+    assert ds_pfd_decoded.time == 0.7954951288348661
     assert "t" not in ds_pfd_decoded.coords
 
 
