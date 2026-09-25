@@ -159,10 +159,16 @@ def test_pfd_moments(ds_pfd_moments_decoded):
 
 
 @pytest.mark.parametrize(
-    "filename", ["pfd.000000400.bp", "pfd_moments.000000400.bp", "pfd.000000000.bp"]
+    "filename",
+    [
+        "continuity.000000001.bp",
+        "gauss.000000001.bp",
+        "pfd.000000001.bp",
+        "pfd_moments.000000001.bp",
+    ],
 )
 def test_legacy_rejected(filename):
-    ds = xr.open_dataset(pscpy.sample_dir / filename)
+    ds = xr.open_dataset(pscpy.sample_dir / "legacy" / filename)
     with pytest.raises(
         ValueError, match=r"psc_output_version.*pscpy\.convert\.legacy_to_v1"
     ):
