@@ -163,7 +163,9 @@ def test_pfd_moments(ds_pfd_moments_decoded):
 )
 def test_legacy_rejected(filename):
     ds = xr.open_dataset(pscpy.sample_dir / filename)
-    with pytest.raises(ValueError, match=r"psc_output_version.*pscpy\.convert\.legacy_to_v1"):
+    with pytest.raises(
+        ValueError, match=r"psc_output_version.*pscpy\.convert\.legacy_to_v1"
+    ):
         pscpy.decode_psc(ds)
 
 
@@ -171,6 +173,19 @@ def test_legacy_rejected(filename):
 def test_unsupported_version_rejected(ds_pfd_raw, version):
     ds = ds_pfd_raw.assign_attrs(psc_output_version=version)
     with pytest.raises(ValueError, match=r"Unsupported psc_output_version"):
+        pscpy.decode_psc(ds)
+
+
+def test_older_version_points_to_converters(ds_pfd_raw):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version="0.9.0")
+    with pytest.raises(ValueError, match=r"pscpy\.convert"):
+        pscpy.decode_psc(ds)
+
+
+@pytest.mark.parametrize("version", ["2.0.0", "garbage"])
+def test_newer_version_has_no_converter_hint(ds_pfd_raw, version):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version=version)
+    with pytest.raises(ValueError, match=r"supported\.$"):
         pscpy.decode_psc(ds)
 
 

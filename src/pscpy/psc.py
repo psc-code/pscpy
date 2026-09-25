@@ -22,6 +22,8 @@ def check_psc_output_version(attrs: dict[str, object]) -> None:
             f"Unsupported psc_output_version {version!r}; "
             f"only {SUPPORTED_MAJOR_VERSION}.x.y is supported."
         )
+        if major.isdigit() and int(major) < SUPPORTED_MAJOR_VERSION:
+            message += " Convert older output with the modules in pscpy.convert."
         raise ValueError(message)
 
 
