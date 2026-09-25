@@ -163,7 +163,7 @@ def test_pfd_moments(ds_pfd_moments_decoded):
 )
 def test_legacy_rejected(filename):
     ds = xr.open_dataset(pscpy.sample_dir / filename)
-    with pytest.raises(ValueError, match=r"psc_output_version.*pscpy\.convert"):
+    with pytest.raises(ValueError, match=r"psc_output_version.*pscpy\.convert\.legacy_to_v1"):
         pscpy.decode_psc(ds)
 
 

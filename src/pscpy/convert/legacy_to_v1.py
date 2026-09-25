@@ -7,7 +7,7 @@ cell-centered x/y/z coordinates and a scalar "time" variable.
 
 Usage::
 
-    python -m pscpy.convert -o OUTDIR [--species e,i] [--length LX LY LZ]
+    python -m pscpy.convert.legacy_to_v1 -o OUTDIR [--species e,i] [--length LX LY LZ]
         [--corner CX CY CZ] SRC.bp [SRC.bp ...]
 
 Each SRC.bp is written to OUTDIR with the same file name.
@@ -26,7 +26,7 @@ import adios2py
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .psc import PSC_OUTPUT_VERSION
+from ..psc import PSC_OUTPUT_VERSION
 
 JEH_COMPONENTS = ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]  # fmt: skip
 FIELD_COMPONENTS = {
@@ -181,7 +181,7 @@ def convert_file(
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        prog="python -m pscpy.convert",
+        prog="python -m pscpy.convert.legacy_to_v1",
         description=f"Convert legacy psc .bp output to psc_output_version {PSC_OUTPUT_VERSION}.",
     )
     parser.add_argument("src", nargs="+", type=pathlib.Path, help="legacy .bp files")

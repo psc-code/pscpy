@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 import pscpy
-from pscpy.convert import (
+from pscpy.convert.legacy_to_v1 import (
     _cell_centers,
     convert_file,
     legacy_component_names,

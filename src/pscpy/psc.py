@@ -15,7 +15,7 @@ def check_psc_output_version(attrs: dict[str, object]) -> None:
         message = (
             "Dataset has no psc_output_version attribute, so it was written in the "
             "legacy (pre-1.0.0) psc output format. Convert it first with "
-            "`python -m pscpy.convert`."
+            "`python -m pscpy.convert.legacy_to_v1`."
         )
         raise ValueError(message)
 
