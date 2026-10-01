@@ -8,6 +8,11 @@ from xarray_adios2 import Adios2Store
 
 import pscpy
 
+# decode_psc is deprecated, but its behavior is still tested here.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:As of PSC output version v1:DeprecationWarning"
+)
+
 
 @pytest.fixture
 def test_filename(tmp_path):
@@ -68,63 +73,67 @@ def test_filename_4(tmp_path):
 
 
 @pytest.fixture
-def ds_pfd_raw() -> xr.Dataset:
-    return xr.open_dataset(pscpy.sample_dir / "pfd.000000400.bp")
+def ds_pfd_raw(latest_sample_dir) -> xr.Dataset:
+    return xr.open_dataset(latest_sample_dir / "pfd.000000001.bp")
 
 
 @pytest.fixture
-def ds_pfd_moments_raw() -> xr.Dataset:
-    return xr.open_dataset(pscpy.sample_dir / "pfd_moments.000000400.bp")
-
-
-def _decode_dataset(ds: xr.Dataset) -> xr.Dataset:
-    return pscpy.decode_psc(
-        ds,
-        species_names=["e", "i"],
-        length=[1, 12.8, 51.2],
-        corner=[0, -6.4, -25.6],
-    )
+def ds_pfd_moments_raw(latest_sample_dir) -> xr.Dataset:
+    return xr.open_dataset(latest_sample_dir / "pfd_moments.000000001.bp")
 
 
 @pytest.fixture
 def ds_pfd_decoded(ds_pfd_raw) -> xr.Dataset:
-    return _decode_dataset(ds_pfd_raw)
+    return pscpy.decode_psc(ds_pfd_raw)
 
 
 @pytest.fixture
 def ds_pfd_moments_decoded(ds_pfd_moments_raw) -> xr.Dataset:
-    return _decode_dataset(ds_pfd_moments_raw)
+    return pscpy.decode_psc(ds_pfd_moments_raw)
 
 
-@pytest.fixture
-def ds_with_time_arr():
-    return pscpy.decode_psc(
-        xr.open_dataset(pscpy.sample_dir / "pfd.000000000.bp"), ["e", "i"]
-    )
+def _cell_centers(corner: float, length: float, n: int) -> np.ndarray:
+    return corner + (np.arange(n) + 0.5) * (length / n)
 
 
 def test_open_dataset(ds_pfd_decoded):
-    assert "jx_ec" in ds_pfd_decoded
+    assert set(ds_pfd_decoded.data_vars) == {
+        "jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"
+    }  # fmt: skip
     assert ds_pfd_decoded.coords.keys() == set({"x", "y", "z", "t"})
-    assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=128, z=512)  # noqa: C408
-    assert np.allclose(
-        ds_pfd_decoded.jx_ec.z.data, np.linspace(-25.6, 25.6, 512, endpoint=False).data
+    assert ds_pfd_decoded.jx_ec.dims == ("z", "y", "x")
+    assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=8, z=4)  # noqa: C408
+
+
+def test_coords(ds_pfd_decoded):
+    assert np.allclose(ds_pfd_decoded.x, _cell_centers(0.0, 1.0, 1))
+    assert np.allclose(ds_pfd_decoded.y, _cell_centers(-5.0, 10.0, 8))
+    assert np.allclose(ds_pfd_decoded.z, _cell_centers(-2.5, 5.0, 4))
+
+
+def test_time(ds_pfd_decoded):
+    assert ds_pfd_decoded.t.ndim == 0
+    assert ds_pfd_decoded.t == 0.7954951288348661
+    assert "time" not in ds_pfd_decoded.coords
+
+
+def test_time_multiple_steps(ds_pfd_raw):
+    ds = xr.concat(
+        [ds_pfd_raw, ds_pfd_raw.assign_coords(time=ds_pfd_raw.time + 1.0)], dim="time"
     )
+    ds_decoded = pscpy.decode_psc(ds)
+    assert ds_decoded.sizes["t"] == 2
+    assert ds_decoded.jx_ec.dims == ("t", "z", "y", "x")
 
 
-def test_time_arr(ds_with_time_arr):
-    assert np.isclose(ds_with_time_arr.time[0], 0.0)
-
-
-def test_component(ds_pfd_raw, ds_pfd_decoded):
-    assert np.all(ds_pfd_raw.jeh.isel(dim_1_9=0).data == ds_pfd_decoded.jx_ec.data)
+def test_data_unchanged(ds_pfd_raw, ds_pfd_decoded):
+    for name, var in ds_pfd_decoded.data_vars.items():
+        assert np.array_equal(var.data, ds_pfd_raw[name].isel(time=0).data)
 
 
 def test_selection(ds_pfd_raw, ds_pfd_decoded):
-    data_raw = ds_pfd_raw.jeh.isel(
-        dim_1_9=0, dim_3_128=slice(0, 10), dim_2_512=slice(0, 40)
-    ).data
-    data_decoded = ds_pfd_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 40)).data
+    data_raw = ds_pfd_raw.jx_ec.isel(time=0, y=slice(0, 10), z=slice(0, 1)).data
+    data_decoded = ds_pfd_decoded.jx_ec.isel(y=slice(0, 10), z=slice(0, 1)).data
     assert np.all(data_raw == data_decoded)
 
 
@@ -136,41 +145,69 @@ def test_nbytes(ds_pfd_raw, ds_pfd_decoded):
     assert _get_nbytes(ds_pfd_raw) == _get_nbytes(ds_pfd_decoded)
 
 
-def test_missing_length(ds_pfd_raw):
-    with pytest.raises(ValueError, match=r".*length.*"):
-        pscpy.decode_psc(
-            ds_pfd_raw,
-            species_names=["e", "i"],
-            corner=[0, -6.4, -25.6],
-        )
+def test_computed(ds_pfd_decoded):
+    ds = ds_pfd_decoded.assign(jx=ds_pfd_decoded.jx_ec * 2)
+    assert np.all(ds.jx.data == 2 * ds_pfd_decoded.jx_ec.data)
 
 
-def test_missing_corner(ds_pfd_raw):
-    with pytest.raises(ValueError, match=r".*corner.*"):
-        pscpy.decode_psc(
-            ds_pfd_raw,
-            species_names=["e", "i"],
-            length=[1, 12.8, 51.2],
-        )
+def test_computed_via_lambda(ds_pfd_decoded):
+    ds = ds_pfd_decoded.assign(jx=lambda ds: ds.jx_ec * 2)
+    assert np.all(ds.jx.data == 2 * ds_pfd_decoded.jx_ec.data)
 
 
-def test_computed(ds_pfd_raw, ds_pfd_decoded):
-    ds_pfd_raw = ds_pfd_raw.assign(jx=ds_pfd_raw.jeh.isel(dim_1_9=0))
-    assert np.all(ds_pfd_raw.jx.data == ds_pfd_decoded.jx_ec.data)
+def test_pfd_moments(ds_pfd_moments_decoded):
+    moments = ["rho", "jx", "jy", "jz", "px", "py", "pz", "txx", "tyy", "tzz", "txy", "tyz", "tzx"]  # fmt: skip
+    expected = {f"{moment}_{species}" for species in "ei" for moment in moments}
+    assert set(ds_pfd_moments_decoded.data_vars) == expected
+    assert np.all(ds_pfd_moments_decoded.rho_e < 0)
+    assert np.all(ds_pfd_moments_decoded.rho_i > 0)
 
 
-def test_computed_via_lambda(ds_pfd_raw, ds_pfd_decoded):
-    ds_pfd_raw = ds_pfd_raw.assign(jx=lambda ds: ds.jeh.isel(dim_1_9=0))
-    assert np.all(ds_pfd_raw.jx.data == ds_pfd_decoded.jx_ec.data)
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "continuity.000000001.bp",
+        "gauss.000000001.bp",
+        "pfd.000000001.bp",
+        "pfd_moments.000000001.bp",
+    ],
+)
+def test_legacy_rejected(filename):
+    ds = xr.open_dataset(pscpy.sample_dir / "legacy" / filename)
+    with pytest.raises(
+        ValueError, match=r"psc_output_version.*pscpy\.convert\.legacy_to_v1"
+    ):
+        pscpy.decode_psc(ds)
 
 
-def test_pfd_moments(ds_pfd_moments_raw, ds_pfd_moments_decoded):
-    assert "all_1st" in ds_pfd_moments_raw
-    assert "rho_i" in ds_pfd_moments_decoded
-    assert np.all(
-        ds_pfd_moments_decoded.rho_i.data
-        == ds_pfd_moments_raw.all_1st.isel(dim_1_26=13).data
-    )
+@pytest.mark.parametrize("version", ["0.9.0", "2.0.0", "garbage"])
+def test_unsupported_version_rejected(ds_pfd_raw, version):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version=version)
+    with pytest.raises(ValueError, match=r"Unsupported psc_output_version"):
+        pscpy.decode_psc(ds)
+
+
+def test_older_version_points_to_converters(ds_pfd_raw):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version="0.9.0")
+    with pytest.raises(ValueError, match=r"pscpy\.convert"):
+        pscpy.decode_psc(ds)
+
+
+@pytest.mark.parametrize("version", ["2.0.0", "garbage"])
+def test_newer_version_has_no_converter_hint(ds_pfd_raw, version):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version=version)
+    with pytest.raises(ValueError, match=r"supported\.$"):
+        pscpy.decode_psc(ds)
+
+
+def test_decode_psc_deprecated(ds_pfd_raw):
+    with pytest.deprecated_call():
+        pscpy.decode_psc(ds_pfd_raw)
+
+
+def test_compatible_version_accepted(ds_pfd_raw):
+    ds = ds_pfd_raw.assign_attrs(psc_output_version="1.2.3")
+    assert "jx_ec" in pscpy.decode_psc(ds)
 
 
 def test_open_dataset_steps(test_filename):

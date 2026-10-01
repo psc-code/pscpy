@@ -1,108 +1,49 @@
 from __future__ import annotations
 
-from collections.abc import Generator, Hashable, Iterable
-from typing import Any
-
-import numpy as np
 import xarray as xr
-from numpy.typing import ArrayLike, NDArray
+from typing_extensions import deprecated
+
+SUPPORTED_MAJOR_VERSION = 1
 
 
-class RunInfo:
-    """Global information about the PSC run
+def check_psc_output_version(attrs: dict[str, object]) -> None:
+    """Raise ValueError unless `attrs` has a supported "psc_output_version"."""
+    version = attrs.get("psc_output_version")
+    if version is None:
+        message = (
+            "Dataset has no psc_output_version attribute, so it was written in the "
+            "legacy (pre-1.0.0) psc output format. Convert it first with "
+            "`python -m pscpy.convert.legacy_to_v1`."
+        )
+        raise ValueError(message)
 
-    Currently stores domain info.
-    TODO: Should also know about timestep, species, whatever...
+    major = str(version).split(".", maxsplit=1)[0]
+    if major != str(SUPPORTED_MAJOR_VERSION):
+        message = (
+            f"Unsupported psc_output_version {version!r}; "
+            f"only {SUPPORTED_MAJOR_VERSION}.x.y is supported."
+        )
+        if major.isdigit() and int(major) < SUPPORTED_MAJOR_VERSION:
+            message += " Convert older output with the modules in pscpy.convert."
+        raise ValueError(message)
+
+
+@deprecated(
+    "As of PSC output version v1, `decode_psc`'s only transformative action is to squeeze `time` and rename it to `t` to preserve backwards compatibility. From now on, the officially-supported way to get usable PSC data is to call `xr.open_dataset()` or `xr.open_mfdataset()` with default options."
+)
+def decode_psc(ds: xr.Dataset) -> xr.Dataset:
+    """Decode a dataset written by psc (psc_output_version 1.x.y).
+
+    Each field component is already its own variable with (z, y, x) dims and
+    cell-centered coordinates, so this only validates the format version,
+    renames "time" to "t" and drops the "t" dimension if the dataset contains
+    a single step.
     """
+    check_psc_output_version(ds.attrs)
 
-    def __init__(
-        self,
-        ds: xr.Dataset,
-        length: ArrayLike | None = None,
-        corner: ArrayLike | None = None,
-    ) -> None:
-        first_var = ds[next(iter(ds))]
-        self.gdims = np.asarray(first_var.shape)[::-1][:3]
-
-        self.length = ds.attrs.get("length", length)
-        self.corner = ds.attrs.get("corner", corner)
-
-        if self.length is None:
-            message = "Dataset is missing length. A value must be manually provided."
-            raise ValueError(message)
-        if self.corner is None:
-            message = "Dataset is missing corner. A value must be manually provided."
-            raise ValueError(message)
-
-        self.x = self._get_coord(0)
-        self.y = self._get_coord(1)
-        self.z = self._get_coord(2)
-
-    def _get_coord(self, coord_idx: int) -> NDArray[Any]:
-        return np.linspace(
-            start=self.corner[coord_idx],
-            stop=self.corner[coord_idx] + self.length[coord_idx],
-            num=self.gdims[coord_idx],
-            endpoint=False,
-        )
-
-    def __repr__(self) -> str:
-        return f"Psc(gdims={self.gdims}, length={self.length}, corner={self.corner})"
-
-
-def iter_components(field: Hashable, species_names: Iterable[str]) -> Generator[str]:
-    if field == "jeh":
-        yield from ["jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"]  # fmt: off
-    elif field in ["dive", "rho", "d_rho", "dt_divj"]:
-        yield str(field)
-    elif field in ["all_1st", "all_1st_cc"]:
-        moments = ["rho", "jx", "jy", "jz", "px", "py", "pz", "txx", "tyy", "tzz", "txy", "tyz", "tzx"]  # fmt: off
-        for species_name in species_names:
-            for moment in moments:
-                yield f"{moment}_{species_name}"
-
-
-def unwrap_float(arr: np.ndarray) -> float:
-    if arr.ndim == 0:
-        return float(arr)
-    return float(arr[0])
-
-
-def decode_psc(
-    ds: xr.Dataset,
-    species_names: Iterable[str],
-    length: ArrayLike | None = None,
-    corner: ArrayLike | None = None,
-) -> xr.Dataset:
-    dims = list(ds.dims)
-    if "dim_0_1" in dims:
-        # for compatibility, if dimensions weren't saved as attribute in the .bp file,
-        # fix them up here
-        ds = ds.rename_dims(
-            {
-                dims[0]: "step",
-                dims[1]: "component",
-                dims[2]: "z",
-                dims[3]: "y",
-                dims[4]: "x",
-            }
-        )
-    ds = ds.squeeze("step")
-
-    for var_name in ds:
-        components = list(iter_components(var_name, species_names))
-        for component_idx, component in enumerate(components):
-            ds = ds.assign({component: ds[var_name].isel(component=component_idx)})
-        if var_name not in components:
-            ds = ds.drop_vars([var_name])
-
-    run_info = RunInfo(ds, length=length, corner=corner)
-    coords = {
-        "x": ("x", run_info.x),
-        "y": ("y", run_info.y),
-        "z": ("z", run_info.z),
-        "t": unwrap_float(ds.attrs["time"]),
-    }
-    ds = ds.assign_coords(coords)
+    if "time" in ds.variables or "time" in ds.dims:
+        ds = ds.rename(time="t")
+    if ds.sizes.get("t") == 1:
+        ds = ds.squeeze("t")
 
     return ds
