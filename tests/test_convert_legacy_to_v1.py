@@ -13,6 +13,11 @@ from pscpy.convert.legacy_to_v1 import (
     main,
 )
 
+# decode_psc is deprecated, but its behavior is still tested here.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:As of PSC output version v1:DeprecationWarning"
+)
+
 LEGACY_DIR = pscpy.sample_dir / "legacy"
 V1_DIR = pscpy.sample_dir / "v1"
 SAMPLE_FILES = [

@@ -8,6 +8,11 @@ from xarray_adios2 import Adios2Store
 
 import pscpy
 
+# decode_psc is deprecated, but its behavior is still tested here.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:As of PSC output version v1:DeprecationWarning"
+)
+
 
 @pytest.fixture
 def test_filename(tmp_path):
@@ -193,6 +198,11 @@ def test_newer_version_has_no_converter_hint(ds_pfd_raw, version):
     ds = ds_pfd_raw.assign_attrs(psc_output_version=version)
     with pytest.raises(ValueError, match=r"supported\.$"):
         pscpy.decode_psc(ds)
+
+
+def test_decode_psc_deprecated(ds_pfd_raw):
+    with pytest.deprecated_call():
+        pscpy.decode_psc(ds_pfd_raw)
 
 
 def test_compatible_version_accepted(ds_pfd_raw):

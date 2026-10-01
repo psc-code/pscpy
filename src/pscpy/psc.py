@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import xarray as xr
+from typing_extensions import deprecated
 
 SUPPORTED_MAJOR_VERSION = 1
 
@@ -27,6 +28,9 @@ def check_psc_output_version(attrs: dict[str, object]) -> None:
         raise ValueError(message)
 
 
+@deprecated(
+    "As of PSC output version v1, `decode_psc`'s only transformative action is to squeeze `time` and rename it to `t` to preserve backwards compatibility. From now on, the officially-supported way to get usable PSC data is to call `xr.open_dataset()` or `xr.open_mfdataset()` with default options."
+)
 def decode_psc(ds: xr.Dataset) -> xr.Dataset:
     """Decode a dataset written by psc (psc_output_version 1.x.y).
 
