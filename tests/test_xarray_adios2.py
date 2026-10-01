@@ -95,7 +95,7 @@ def test_open_dataset(ds_pfd_decoded):
     assert set(ds_pfd_decoded.data_vars) == {
         "jx_ec", "jy_ec", "jz_ec", "ex_ec", "ey_ec", "ez_ec", "hx_fc", "hy_fc", "hz_fc"
     }  # fmt: skip
-    assert ds_pfd_decoded.coords.keys() == set({"x", "y", "z", "time"})
+    assert ds_pfd_decoded.coords.keys() == set({"x", "y", "z", "t"})
     assert ds_pfd_decoded.jx_ec.dims == ("z", "y", "x")
     assert ds_pfd_decoded.jx_ec.sizes == dict(x=1, y=8, z=4)  # noqa: C408
 
@@ -107,9 +107,9 @@ def test_coords(ds_pfd_decoded):
 
 
 def test_time(ds_pfd_decoded):
-    assert ds_pfd_decoded.time.ndim == 0
-    assert ds_pfd_decoded.time == 0.7954951288348661
-    assert "t" not in ds_pfd_decoded.coords
+    assert ds_pfd_decoded.t.ndim == 0
+    assert ds_pfd_decoded.t == 0.7954951288348661
+    assert "time" not in ds_pfd_decoded.coords
 
 
 def test_time_multiple_steps(ds_pfd_raw):
@@ -117,8 +117,8 @@ def test_time_multiple_steps(ds_pfd_raw):
         [ds_pfd_raw, ds_pfd_raw.assign_coords(time=ds_pfd_raw.time + 1.0)], dim="time"
     )
     ds_decoded = pscpy.decode_psc(ds)
-    assert ds_decoded.sizes["time"] == 2
-    assert ds_decoded.jx_ec.dims == ("time", "z", "y", "x")
+    assert ds_decoded.sizes["t"] == 2
+    assert ds_decoded.jx_ec.dims == ("t", "z", "y", "x")
 
 
 def test_data_unchanged(ds_pfd_raw, ds_pfd_decoded):

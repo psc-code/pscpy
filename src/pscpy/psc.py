@@ -31,12 +31,15 @@ def decode_psc(ds: xr.Dataset) -> xr.Dataset:
     """Decode a dataset written by psc (psc_output_version 1.x.y).
 
     Each field component is already its own variable with (z, y, x) dims and
-    cell-centered coordinates, so this only validates the format version and
-    drops the "time" dimension if the dataset contains a single step.
+    cell-centered coordinates, so this only validates the format version,
+    renames "time" to "t" and drops the "t" dimension if the dataset contains
+    a single step.
     """
     check_psc_output_version(ds.attrs)
 
-    if ds.sizes.get("time") == 1:
-        ds = ds.squeeze("time")
+    if "time" in ds.variables or "time" in ds.dims:
+        ds = ds.rename(time="t")
+    if ds.sizes.get("t") == 1:
+        ds = ds.squeeze("t")
 
     return ds
