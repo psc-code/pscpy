@@ -34,7 +34,7 @@ def check_psc_output_version(attrs: dict[str, object]) -> None:
 @deprecated(
     "As of PSC output version v1, `decode_psc`'s only transformative action is to squeeze `time` and rename it to `t` to preserve backwards compatibility. From now on, the officially-supported way to get usable PSC data is to call `xr.open_dataset()` or `xr.open_mfdataset()` with default options."
 )
-def decode_psc(ds: xr.Dataset, **kwargs: Any) -> xr.Dataset:
+def decode_psc(ds: xr.Dataset, *args: Any, **kwargs: Any) -> xr.Dataset:
     """Decode a dataset written by psc (psc_output_version 1.x.y).
 
     Each field component is already its own variable with (z, y, x) dims and
@@ -44,9 +44,9 @@ def decode_psc(ds: xr.Dataset, **kwargs: Any) -> xr.Dataset:
     """
     check_psc_output_version(ds.attrs)
 
-    if kwargs:
+    if args or kwargs:
         warnings.warn(
-            f"Other args ({', '.join(kwargs.keys())}) to `decode_psc` are no longer used.",
+            "Other args to `decode_psc` are no longer used.",
             stacklevel=2,
         )
 
