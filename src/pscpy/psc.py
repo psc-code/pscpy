@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import warnings
+from typing import Any
+
 import xarray as xr
 from typing_extensions import deprecated
 
@@ -31,7 +34,7 @@ def check_psc_output_version(attrs: dict[str, object]) -> None:
 @deprecated(
     "As of PSC output version v1, `decode_psc`'s only transformative action is to squeeze `time` and rename it to `t` to preserve backwards compatibility. From now on, the officially-supported way to get usable PSC data is to call `xr.open_dataset()` or `xr.open_mfdataset()` with default options."
 )
-def decode_psc(ds: xr.Dataset) -> xr.Dataset:
+def decode_psc(ds: xr.Dataset, **kwargs: Any) -> xr.Dataset:
     """Decode a dataset written by psc (psc_output_version 1.x.y).
 
     Each field component is already its own variable with (z, y, x) dims and
@@ -40,6 +43,12 @@ def decode_psc(ds: xr.Dataset) -> xr.Dataset:
     a single step.
     """
     check_psc_output_version(ds.attrs)
+
+    if kwargs:
+        warnings.warn(
+            f"Other args ({', '.join(kwargs.keys())}) to `decode_psc` are no longer used.",
+            stacklevel=2,
+        )
 
     if "time" in ds.variables or "time" in ds.dims:
         ds = ds.rename(time="t")
